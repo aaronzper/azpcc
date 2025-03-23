@@ -1,5 +1,6 @@
 use super::{Declaration, Expression};
 
+#[derive(Debug)]
 pub enum Statement {
     Compound(Box<[Statement]>),
     Declaration(Box<Declaration>),
@@ -14,12 +15,14 @@ pub enum Statement {
 }
 
 // If-Else can be done by chaining these
+#[derive(Debug)]
 pub struct IfStatement {
     pub condition: Expression,
     pub if_block: Statement,
     pub else_block: Option<Statement>,
 }
 
+#[derive(Debug)]
 pub struct WhileLoopStatement {
     pub condition: Expression,
     pub body: Statement,

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum Type {
     Uint8, // unsigned char
     Uint16,// unsigned short
@@ -20,6 +21,7 @@ pub enum Type {
     // TODO: Structs, enums
 }
 
+#[derive(Debug)]
 pub struct FunctionType {
     pub return_type: Type,
     pub args: Box<[Type]>,

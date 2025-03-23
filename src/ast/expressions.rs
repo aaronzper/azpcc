@@ -1,6 +1,7 @@
 use super::Type;
 
 // TODO: Struct/pointer subfield accessing, +x, float literals
+#[derive(Debug)]
 pub enum Expression {
     Assignment(Box<BinaryExpr>),// x = y
 
@@ -56,26 +57,31 @@ pub enum Expression {
     StringLiteral(String),      // "hello world\n"
 }
 
+#[derive(Debug)]
 pub struct TernaryExpr {
     pub condition: Expression,
     pub true_expr: Expression,
     pub false_expr: Expression,
 }
 
+#[derive(Debug)]
 pub struct BinaryExpr {
     pub first: Expression,
     pub second: Expression,
 }
 
+#[derive(Debug)]
 pub struct UnaryExpr {
     pub expr: Expression
 }
 
+#[derive(Debug)]
 pub struct CastExpr {
     pub cast_to: Type,
     pub expr: Expression,
 }
 
+#[derive(Debug)]
 pub struct FuncCallExpr {
     pub func: Expression,
     pub args: Box<[Expression]>,
