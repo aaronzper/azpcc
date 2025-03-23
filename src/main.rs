@@ -4,7 +4,7 @@ use clap::{Parser, ValueEnum};
 use codegen::{triple::get_triple, generate};
 use colog::basic_builder;
 use error::CompilerError;
-use log::{debug, info, LevelFilter};
+use log::{debug, info, error, LevelFilter};
 use preprocessor::preprocess;
 
 pub mod error;
@@ -77,7 +77,7 @@ struct CLIArgs {
     log_level: LogLevel,
 }
 
-fn main() -> Result<(), CompilerError> {
+fn entry() -> Result<(), CompilerError> {
     let args = CLIArgs::parse();
 
     let mut log_builder = basic_builder();
@@ -101,7 +101,12 @@ fn main() -> Result<(), CompilerError> {
 
     info!("Starting code generation for {}", triple);
 
-    generate(triple, Path::new("a.o"));
+    generate(triple, Path::new("a.o"))
+}
 
-    Ok(())
+fn main() {
+    match entry() {
+        Ok(_) => (),
+        Err(e) => error!("{}", e)
+    }
 }
