@@ -1,0 +1,42 @@
+use std::path::PathBuf;
+use crate::preprocessor::directive::Directive;
+use crate::preprocessor::directive::Definition;
+
+grammar;
+
+match {
+    r"([A-Za-z_][A-Za-z0-9_]*)" => Identifier,
+    r"(\.|(\.\.)|(\w*)\/)*\w*\.\w" => FilePath,
+    _
+} else {
+    r"-?\d+(\.\d+)?" => Number,
+    r#"[!%^\*&\(\)\-+=\{\}\|\~\[\]\\;:'"<>,./#]"# => Operator,
+}
+
+pub Directive: Directive = {
+    "#include" "<" <Path> ">" => Directive::IncludeGlobal(<>),
+    "#include" "\"" <Path> "\"" => Directive::IncludeLocal(<>),
+    "#define" <DefinitionDeclaration> => Directive::Define(<>),
+}
+
+Path: PathBuf = {
+    <FilePath> => PathBuf::from(<>)
+}
+
+DefinitionDeclaration: Definition = {
+    <id:Identifier> <def:Definition?> => Definition {
+        identifier: String::from(id),
+        replacement: def,
+    }
+}
+
+Definition: String = {
+    <CToken+> => <>.join(" ")
+}
+
+CToken: String = {
+    <Identifier> => String::from(<>),
+    <Number> => String::from(<>),
+    <Operator> => String::from(<>),
+    // TODO: Include string/char literals
+}

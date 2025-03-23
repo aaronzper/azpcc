@@ -1,14 +1,57 @@
-pub fn preprocess(contents: &str) -> String {
-    contents.lines().filter_map(|line| {
+use std::path::Path;
+
+use lalrpop_util::lalrpop_mod;
+
+use crate::{error::CompilerError, fs::read_file};
+
+mod directive;
+use directive::Directive;
+
+lalrpop_mod!(grammar, "/preprocessor/grammar.rs");
+
+fn parse(file_contents: &str) -> Vec<Directive> {
+    // First parse each line into either a raw string or the directive
+    file_contents.lines().map(|line| {
         if line.starts_with('#') {
-            println!("Directive: {}", line);
-            None
+            grammar::DirectiveParser::new().parse(line).unwrap()
         } else {
-            Some(line)
+            Directive::Raw(String::from(line))
         }
-    }).fold(String::new(), |mut acc, line| {
-        acc.push_str(line);
-        acc.push('\n');
-        acc
+    // Then, combine any adjacent raw strings
+    }).fold(Vec::new(), |mut directives, curr| {
+        match directives.pop() {
+            // We're the first directive, just push
+            None => directives.push(curr),
+            // Last directive was a raw, so combine us and them if we're
+            // also a raw
+            Some(Directive::Raw(line)) => {
+                match curr {
+                    // We're a raw! Combine and push
+                    Directive::Raw(curr_line) => {
+                        let combined = [line, curr_line].join("\n");
+                        directives.push(Directive::Raw(combined));
+                    }
+                    // We're not :( so just push each
+                    _ => {
+                        directives.push(Directive::Raw(line));
+                        directives.push(curr);
+                    }
+                }
+            },
+            // Last directive wasn't, so push it back alongside us
+            Some(x) => {
+                directives.push(x);
+                directives.push(curr);
+            }
+        };
+
+        directives
     })
+}
+
+pub fn preprocess(path: &Path) -> Result<String, CompilerError> {
+    let file_contents = read_file(path)?;
+    let directives = parse(&file_contents);
+
+    Ok(format!("{:?}", directives))
 }
