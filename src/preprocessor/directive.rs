@@ -13,3 +13,4 @@ pub struct Definition {
     pub identifier: String,
     pub replacement: Option<String>,
 }
+
