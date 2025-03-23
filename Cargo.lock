@@ -81,6 +81,7 @@ name = "azpcc"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "indexmap",
  "lalrpop",
  "lalrpop-util 0.21.0",
  "target-lexicon",

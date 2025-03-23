@@ -6,6 +6,9 @@ pub enum CompilerError {
     #[error("File Error: {0}")]
     FileError(#[from] io::Error),
 
+    #[error("Feature Not Supported: {0}")]
+    NotSupported(&'static str),
+
     #[error("{0}")]
     Custom(&'static str),
 }

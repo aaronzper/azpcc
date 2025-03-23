@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use indexmap::IndexMap;
 use lalrpop_util::lalrpop_mod;
 
 use crate::{error::CompilerError, fs::read_file};
@@ -49,9 +50,48 @@ fn parse(file_contents: &str) -> Vec<Directive> {
     })
 }
 
-pub fn preprocess(path: &Path) -> Result<String, CompilerError> {
+fn get_directives(path: &Path) -> Result<Vec<Directive>, CompilerError> {
     let file_contents = read_file(path)?;
     let directives = parse(&file_contents);
 
-    Ok(format!("{:?}", directives))
+    Ok(directives)
+}
+
+pub fn preprocess(path: &Path) -> Result<String, CompilerError> {
+    let directives = get_directives(path)?;
+
+    let mut definitions: IndexMap<String, Option<String>> = IndexMap::new();
+
+    let mut output = String::new();
+    for directive in directives {
+        match directive {
+            Directive::Raw(mut raw) => {
+                for definition in &definitions {
+                    let replace = match definition.1 {
+                        Some(x) => &x,
+                        None => "",
+                    };
+
+                    raw = raw.replace(definition.0, replace);
+                }
+
+                output.push_str(&raw);
+            },
+
+            Directive::Define(definition) => {
+                if definitions.contains_key(&definition.identifier) {
+                    definitions.shift_remove(&definition.identifier);
+                }
+
+                definitions.insert(
+                    definition.identifier,
+                    definition.replacement
+                );
+            },
+
+            _ => return Err(CompilerError::NotSupported("#include Directives")),
+        }
+    }
+
+    Ok(output)
 }
