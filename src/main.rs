@@ -10,6 +10,7 @@ use preprocessor::preprocess;
 pub mod error;
 pub mod fs;
 pub mod preprocessor;
+pub mod ast;
 pub mod codegen;
 
 #[derive(Debug, Clone, ValueEnum)]
