@@ -1,0 +1,11 @@
+#define START hi
+START
+#define LATER bye
+LATER
+START LATER
+#define START get redefined
+START
+#define SYMBOLS 1 + 2 + 3 >> 2
+SYMBOLS
+#define RECURSIVE I like to say SYMBOLS
+RECURSIVE

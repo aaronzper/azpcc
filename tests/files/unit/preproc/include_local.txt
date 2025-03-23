@@ -1,0 +1,4 @@
+#include "include_local.h"
+Hello from the file!
+#include "include_local.h"
+Yay!
