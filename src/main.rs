@@ -50,6 +50,7 @@ struct CLIArgs {
     #[arg(short, value_name = "PATH")]
     output: Option<PathBuf>,
 
+    /* TODO: This
     /// Define a macro for the preprocessor
     #[arg(short = 'D', value_name = "MACRO")]
     defines: Vec<String>,
@@ -57,6 +58,7 @@ struct CLIArgs {
     /// Include the given directory in the include search path
     #[arg(short = 'I', value_name = "PATH")]
     includes: Vec<PathBuf>,
+    */
 
     /// Only run the preprocessor and send to STDOUT
     #[arg(short = 'E')]
@@ -70,6 +72,7 @@ struct CLIArgs {
     #[arg(long)]
     ast: bool,
 
+    /// How detailed should logs be?
     #[arg(short, long, default_value_t = LogLevel::Standard, value_enum)]
     log_level: LogLevel,
 }
