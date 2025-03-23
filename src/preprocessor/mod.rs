@@ -2,6 +2,7 @@ use std::{collections::VecDeque, path::Path};
 
 use indexmap::IndexMap;
 use lalrpop_util::lalrpop_mod;
+use log::debug;
 
 use crate::{error::CompilerError, fs::read_file};
 
@@ -73,6 +74,8 @@ fn get_directives(path: &Path) -> Result<VecDeque<Directive>, CompilerError> {
 }
 
 pub fn preprocess(path: &Path) -> Result<String, CompilerError> {
+    debug!("Preprocessing {:?}", path);
+
     let mut directives = get_directives(path)?;
 
     let mut definitions: IndexMap<String, String> = IndexMap::new();
