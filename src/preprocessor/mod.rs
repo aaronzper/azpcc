@@ -1,7 +1,5 @@
 pub fn preprocess(contents: &str) -> String {
-    let lines = contents.lines();
-
-    let output = lines.filter_map(|line| {
+    contents.lines().filter_map(|line| {
         if line.starts_with('#') {
             println!("Directive: {}", line);
             None
@@ -12,7 +10,5 @@ pub fn preprocess(contents: &str) -> String {
         acc.push_str(line);
         acc.push('\n');
         acc
-    });
-
-    output
+    })
 }

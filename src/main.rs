@@ -1,7 +1,7 @@
 use std::{fs::File, io::Read, path::{Path, PathBuf}};
 
 use clap::Parser;
-use codegen::x86_64::generate;
+use codegen::{triple::get_triple, generate};
 use preprocessor::preprocess;
 
 pub mod preprocessor;
@@ -61,7 +61,7 @@ fn main() {
         return;
     }
 
-    let triple = crate::codegen::triple::get_triple();
+    let triple = get_triple();
 
     println!("Compiling for {}", triple);
 
