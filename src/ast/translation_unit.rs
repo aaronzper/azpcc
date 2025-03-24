@@ -1,18 +1,20 @@
-use super::{Declaration, SemanticUnit};
+use crate::error::CompilerError;
+
+use super::{Context, Declaration};
 
 #[derive(Debug)]
 pub struct TranslationUnit {
     pub declarations: Box<[Declaration]>,
 }
 
-impl SemanticUnit for TranslationUnit {
-    fn verify_with_context(&self, context: &mut super::Context) -> 
-            Result<(), crate::error::CompilerError> {
-
+impl TranslationUnit {
+    pub fn verify(&self, context: &mut Context) -> Result<(), CompilerError> {
         for decl in &self.declarations {
-            decl.verify_with_context(context)?;
+            decl.verify(context)?;
         }
         
         Ok(())
     }
 }
+
+

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use ast::{SemanticUnit, TranslationUnit};
+use ast::Context;
 use clap::{Parser, ValueEnum};
 use codegen::{triple::get_triple, generate};
 use colog::basic_builder;
@@ -105,7 +105,7 @@ fn entry() -> Result<(), CompilerError> {
     let files_parsed = files_preproccessed.map(|s| match s {
         Ok(x) => {
             let parsed = parse(&x)?;
-            parsed.verify()?;
+            parsed.verify(&mut Context::new())?;
             Ok(parsed)
         },
         Err(e) => Err(e),

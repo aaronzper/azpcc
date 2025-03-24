@@ -1,6 +1,6 @@
 use crate::error::CompilerError;
 
-use super::{Expression, SemanticUnit, Statement, Type};
+use super::{Expression, Statement, Type};
 
 #[derive(Debug)]
 pub struct Declaration {
@@ -15,8 +15,8 @@ pub enum DeclarationValue {
     Function(Box<[Statement]>),
 }
 
-impl SemanticUnit for Declaration {
-    fn verify_with_context(&self, context: &mut super::Context) -> 
+impl Declaration {
+    pub fn verify(&self, context: &mut super::Context) -> 
             Result<(), CompilerError> {
     
         context.add_name(self.name.clone(), self.type_of.clone())?;
@@ -36,7 +36,7 @@ impl SemanticUnit for Declaration {
                         _ => return Err(CompilerError::SemanticError("Global variable assignment must be a literal\nConstant folding isn't currently supported")),
                     }
                 } else {
-                    expr.verify_with_context(context)?;
+                    expr.verify(context)?;
                 }
             },
 
@@ -51,7 +51,7 @@ impl SemanticUnit for Declaration {
                     }
 
                     for stmt in stmts {
-                        stmt.verify_with_context(&mut inner)?;
+                        stmt.verify(&mut inner)?;
                     }
                 } else {
                     panic!("Encountered weird enum varient");

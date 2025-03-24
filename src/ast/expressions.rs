@@ -1,4 +1,6 @@
-use super::{SemanticUnit, Type};
+use crate::error::CompilerError;
+
+use super::Type;
 
 // TODO: Struct/pointer subfield accessing, +x, float literals
 #[derive(Debug)]
@@ -87,11 +89,12 @@ pub struct FuncCallExpr {
     pub args: Box<[Expression]>,
 }
 
-impl SemanticUnit for Expression {
-    fn verify_with_context(&self, context: &mut super::Context) -> 
-        Result<(), crate::error::CompilerError> {
+impl Expression {
+    /// Verifies the expression and returns its type
+    pub fn verify(&self, context: &mut super::Context) -> 
+        Result<Type, CompilerError> {
         
         // TODO
-        Ok(())
+        Ok(Type::Int8)
     }
 }
