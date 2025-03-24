@@ -29,13 +29,6 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn contains_name(&self, name: &str) -> bool {
-        self.scope.contains_key(name) || match self.parent {
-            None => false,
-            Some(x) => x.contains_name(name),
-        }
-    }
-
     pub fn add_name(&mut self, n: String, t: Type) -> Result<(), CompilerError> {
         // Only checking current scope (not parents) cause we can re-define a
         // parent binding, but not one in our own scope
