@@ -244,6 +244,7 @@ ClosedStmt: Statement = {
 
 OtherStmt: Statement = {
   <StatementList> => Statement::Compound(<>),
+  <Decl> => Statement::Declaration(<>),
   <Expression> ";" => Statement::Expression(Box::new(<>)),
   "return" <Expression> ";" => Statement::Return(Box::new(<>)),
 }

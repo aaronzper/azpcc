@@ -3,6 +3,7 @@ use super::{Declaration, Expression, SemanticUnit};
 #[derive(Debug)]
 pub enum Statement {
     Compound(Box<[Statement]>),
+    Declaration(Declaration),
     Expression(Box<Expression>),
     If(Box<IfStatement>),
     WhileLoop(Box<WhileLoopStatement>),
