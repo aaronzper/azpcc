@@ -7,10 +7,12 @@ pub enum Statement {
     Expression(Box<Expression>),
     If(Box<IfStatement>),
     WhileLoop(Box<WhileLoopStatement>),
+    Return(Box<Expression>),
 
     // TODO: 
     // - Labels & Jumps
     // - Do-Whiles and Fors
+    // - Break, Continue
     // - Switches
 }
 
