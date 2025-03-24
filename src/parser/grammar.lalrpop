@@ -3,6 +3,7 @@ use std::str::FromStr;
 use crate::ast::*;
 use crate::ast::types::*;
 use crate::ast::declaration::*;
+use crate::parser::{parse_if, parse_while};
 
 use lalrpop_util::ParseError;
 
@@ -27,17 +28,29 @@ TopLevelDecl: Declaration = {
 }
 
 FunctionDecl: Declaration = {
-  <r:FnTypeSpecifier> <n:Identifier> "(" <args:Comma<FnArg>> ")" ";" => {
-    let arg_types: Box<[Type]> = args.into_iter().map(|x| x.0).collect();
+  <FnDeclOpening> ";" => Declaration {
+    name: <>.0,
+    type_of: <>.1,
+    value: None,
+  },
 
-    Declaration {
-      name: String::from(n),
-      type_of: Type::Function(Box::new(FunctionType {
-        return_type: r,
-        args: arg_types,
-      })),
-      value: None,
-    }
+  <o:FnDeclOpening> <b:StatementList> => Declaration {
+    name: o.0,
+    type_of: o.1,
+    value: Some(DeclarationValue::Function(b)),
+  }
+}
+
+#[inline]
+FnDeclOpening: (String, Type) = {
+  <r:FnTypeSpecifier> <n:Identifier> "(" <args:Comma<FnArg>> ")" => {
+    let arg_types: Box<[Type]> = args.into_iter().map(|x| x.0).collect();
+    let fn_type = Type::Function(Box::new(FunctionType {
+      return_type: r,
+      args: arg_types,
+    }));
+
+    (String::from(n), fn_type)
   }
 }
 
@@ -58,14 +71,14 @@ Decl: Declaration = {
     value: None,
   },
 
-  <t:TypeSpecifier> <n:Identifier> "=" <e:Literal> ";" => Declaration {
+  <t:TypeSpecifier> <n:Identifier> "=" <e:Expression> ";" => Declaration {
     name: String::from(n),
     type_of: t,
     value: Some(DeclarationValue::Variable(e)),
   },
 }
 
-Literal: Expression = {
+Expression: Expression = {
   <IntLiteral> => Expression::IntLiteral(u64::from_str(<>).unwrap()),
   <CharLiteral> =>? 
     Err(ParseError::User { error: "Char literals not supported yet :(" }),
@@ -114,6 +127,35 @@ InnerTypeSpecifier: Type = {
   "long" => Type::Int64,
   "float" => Type::Float,
   "double" => Type::Double,
+}
+
+StatementList: Box<[Statement]> = {
+  "{" <Statement*> "}" => <>.into_boxed_slice(),
+}
+
+Statement: Statement = {
+  <OpenStmt> => <>,
+  <ClosedStmt> => <>,
+}
+
+OpenStmt: Statement = {
+  "if" "(" <c:Expression> ")" <i:Statement> => parse_if(c, i, None),
+  "if" "(" <c:Expression> ")" <i:ClosedStmt> "else" <e:OpenStmt> =>
+    parse_if(c, i, Some(e)),
+  "while" "(" <c:Expression> ")" <b:OpenStmt> => parse_while(c, b),
+}
+
+ClosedStmt: Statement = {
+  <OtherStmt> => <>,
+  "if" "(" <c:Expression> ")" <i:ClosedStmt> "else" <e:ClosedStmt> =>
+    parse_if(c, i, Some(e)),
+  "while" "(" <c:Expression> ")" <b:ClosedStmt> => parse_while(c, b),
+}
+
+OtherStmt: Statement = {
+  <StatementList> => Statement::Compound(<>),
+  <Expression> ";" => Statement::Expression(Box::new(<>)),
+  "return" <Expression> ";" => Statement::Return(Box::new(<>)),
 }
 
 Comma<T>: Vec<T> = {
