@@ -1,0 +1,105 @@
+use crate::ast::*;
+use crate::ast::types::*;
+
+use lalrpop_util::ParseError;
+
+grammar;
+
+match {
+    r"([A-Za-z_][A-Za-z0-9_]*)" => Identifier,
+    _
+}
+
+pub TransalationUnit: TranslationUnit = {
+    <TopLevelDecl*> => TranslationUnit { 
+        declarations: <>.into_boxed_slice()
+    }
+}
+
+TopLevelDecl: Declaration = {
+  <FunctionDecl> => <>,
+  //<Decl> => <>,
+}
+
+FunctionDecl: Declaration = {
+  <r:FnTypeSpecifier> <n:Identifier> "(" <args:Comma<FunctionArg>> ")" ";" => {
+    let arg_types: Box<[Type]> = args.into_iter().map(|x| x.0).collect();
+
+    Declaration {
+      name: String::from(n),
+      type_of: Type::Function(Box::new(FunctionType {
+        return_type: r,
+        args: arg_types,
+      })),
+      value: None,
+    }
+  }
+}
+
+FunctionArg: (Type, String) = {
+  <t:TypeSpecifier> <i:Identifier> => (t, String::from(i))
+}
+
+/*Decl: Declaration = {
+  
+}*/
+
+FnTypeSpecifier: Option<Type> = {
+  "void" => None,
+  <TypeSpecifier> => Some(<>)
+}
+
+TypeSpecifier: Type = {
+  <TypeSpecifier> "*" => Type::Pointer(Box::new(<>)),
+
+  "signed" <InnerTypeSpecifier> =>? match <> {
+    Type::Uint8 => Ok(Type::Int8),
+    Type::Uint16 => Ok(Type::Int16),
+    Type::Uint32 => Ok(Type::Int32),
+    Type::Uint64 => Ok(Type::Int64),
+
+    Type::Int8 => Ok(Type::Int8),
+    Type::Int16 => Ok(Type::Int16),
+    Type::Int32 => Ok(Type::Int32),
+    Type::Int64 => Ok(Type::Int64),
+
+    other => 
+      Err(ParseError::User { error: "'signed' must preceede an integer type" })
+  },
+
+  "unsigned" <InnerTypeSpecifier> =>? match <> {
+    Type::Int8 => Ok(Type::Uint8),
+    Type::Int16 => Ok(Type::Uint16),
+    Type::Int32 => Ok(Type::Uint32),
+    Type::Int64 => Ok(Type::Uint64),
+
+    Type::Uint8 => Ok(Type::Uint8),
+    Type::Uint16 => Ok(Type::Uint16),
+    Type::Uint32 => Ok(Type::Uint32),
+    Type::Uint64 => Ok(Type::Uint64),
+
+    other =>
+      Err(ParseError::User { error: "'unsigned' must preceede an integer type" })
+  },
+
+  <InnerTypeSpecifier> => <>
+}
+
+InnerTypeSpecifier: Type = {
+  "char" => Type::Int8,
+  "short" => Type::Int16,
+  "int" => Type::Int32,
+  "long" => Type::Int64,
+  "float" => Type::Float,
+  "double" => Type::Double,
+}
+
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};

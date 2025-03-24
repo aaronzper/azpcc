@@ -1,8 +1,8 @@
-mod translation_unit;
-mod types;
-mod declaration;
-mod statements;
-mod expressions;
+pub mod translation_unit;
+pub mod types;
+pub mod declaration;
+pub mod statements;
+pub mod expressions;
 
 pub use translation_unit::TranslationUnit;
 pub use types::Type;

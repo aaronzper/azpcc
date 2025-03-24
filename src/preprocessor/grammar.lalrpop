@@ -5,17 +5,18 @@ use crate::preprocessor::directive::Definition;
 grammar;
 
 match {
+    _
+} else {
     r"([A-Za-z_][A-Za-z0-9_]*)" => Identifier,
     r"(\.|(\.\.)|(\w*)\/)*\w*\.\w" => FilePath,
-    _
 } else {
     r"-?\d+(\.\d+)?" => Number,
     r#"[!%^\*&\(\)\-+=\{\}\|\~\[\]\\;:'"<>,./#]+"# => Operator,
 }
 
 pub Directive: Directive = {
-    "#include" "<" <Path> ">" => Directive::IncludeGlobal(<>),
-    "#include" "\"" <Path> "\"" => Directive::IncludeLocal(<>),
+    "#include <" <Path> ">" => Directive::IncludeGlobal(<>),
+    "#include \"" <Path> "\"" => Directive::IncludeLocal(<>),
     "#define" <DefinitionDeclaration> => Directive::Define(<>),
 }
 

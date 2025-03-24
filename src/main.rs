@@ -5,12 +5,14 @@ use codegen::{triple::get_triple, generate};
 use colog::basic_builder;
 use error::CompilerError;
 use log::{debug, info, error, LevelFilter};
+use parser::parse;
 use preprocessor::preprocess;
 
 pub mod error;
 pub mod fs;
 pub mod preprocessor;
 pub mod ast;
+pub mod parser;
 pub mod codegen;
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -93,6 +95,20 @@ fn entry() -> Result<(), CompilerError> {
     if args.preprocess_only {
         for file in files_preproccessed {
             println!("{}", file?);
+        }
+
+        return Ok(());
+    }
+
+    info!("Starting parsing");
+    let files_parsed = files_preproccessed.map(|s| match s {
+        Ok(x) => parse(&x),
+        Err(e) => Err(e),
+    });
+
+    if args.ast {
+        for file in files_parsed {
+            println!("{:#?}", file?);
         }
 
         return Ok(());
