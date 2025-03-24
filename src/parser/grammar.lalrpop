@@ -45,10 +45,9 @@ FunctionDecl: Declaration = {
 #[inline]
 FnDeclOpening: (String, Type) = {
   <r:FnTypeSpecifier> <n:Identifier> "(" <args:Comma<FnArg>> ")" => {
-    let arg_types: Box<[Type]> = args.into_iter().map(|x| x.0).collect();
     let fn_type = Type::Function(Box::new(FunctionType {
       return_type: r,
-      args: arg_types,
+      args: args.into(),
     }));
 
     (String::from(n), fn_type)
@@ -61,8 +60,8 @@ FnTypeSpecifier: Option<Type> = {
   <TypeSpecifier> => Some(<>)
 }
 
-FnArg: (Type, String) = {
-  <t:TypeSpecifier> <i:Identifier> => (t, String::from(i))
+FnArg: (String, Type) = {
+  <t:TypeSpecifier> <i:Identifier> => (String::from(i), t)
 }
 
 Decl: Declaration = {

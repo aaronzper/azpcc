@@ -14,6 +14,9 @@ pub enum CompilerError {
     #[error("Feature Not Supported: {0}")]
     NotSupported(&'static str),
 
+    #[error("Semantic Error: {0}")]
+    SemanticError(&'static str),
+
     #[error("{0}")]
     Custom(&'static str),
 }

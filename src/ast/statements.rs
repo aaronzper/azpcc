@@ -1,4 +1,4 @@
-use super::{Declaration, Expression};
+use super::{Declaration, Expression, SemanticUnit};
 
 #[derive(Debug)]
 pub enum Statement {
@@ -27,4 +27,13 @@ pub struct IfStatement {
 pub struct WhileLoopStatement {
     pub condition: Expression,
     pub body: Statement,
+}
+
+impl SemanticUnit for Statement {
+    fn verify_with_context(&self, context: &mut super::Context) -> 
+        Result<(), crate::error::CompilerError> {
+
+        // TODO
+        Ok(())
+    }
 }
