@@ -44,7 +44,7 @@ pub enum Expression {
     BitwiseNot(Box<UnaryExpr>), // ~x
     LogicalNot(Box<UnaryExpr>), // !x
 
-    SizeOf(Box<UnaryExpr>),     // sizeof(x)
+    SizeOf(Box<UnaryExpr>),     // sizeof x
 
     ArrayIndex(Box<BinaryExpr>),// x[y]
     

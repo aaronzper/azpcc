@@ -3,7 +3,8 @@ use std::str::FromStr;
 use crate::ast::*;
 use crate::ast::types::*;
 use crate::ast::declaration::*;
-use crate::parser::{parse_if, parse_while};
+use crate::ast::expressions::*;
+use crate::parser::helpers::*;
 
 use lalrpop_util::ParseError;
 
@@ -78,10 +79,100 @@ Decl: Declaration = {
   },
 }
 
+// For when we need to "reset" precedence (e.g. inside [] or func args)
+ExprNoPrec: Expression = {
+  <Expression> => <>
+}
+
 Expression: Expression = {
+  #[precedence(level="0")]
+  "(" <Expression> ")" => <>,
   <IntLiteral> => Expression::IntLiteral(u64::from_str(<>).unwrap()),
   <CharLiteral> =>? 
     Err(ParseError::User { error: "Char literals not supported yet :(" }),
+
+  #[precedence(level="1")] #[assoc(side="left")]
+  <Identifier> => Expression::Identifier(String::from(<>)),
+
+  #[precedence(level="2")] #[assoc(side="left")]
+  <f:Expression> "(" <a:Comma<ExprNoPrec>> ")" => Expression::FuncCall(Box::new(
+    FuncCallExpr {
+      func: f,
+      args: a.into(),
+    }
+  )),
+
+  <a:Expression> "[" <i:ExprNoPrec> "]" => 
+    Expression::ArrayIndex(parse_binary(a, i)),
+
+  <Expression> "++" => Expression::PostInc(parse_unary(<>)),
+  <Expression> "--" => Expression::PostDec(parse_unary(<>)),
+
+  #[precedence(level="3")] #[assoc(side="right")]
+  "sizeof" <Expression> => Expression::SizeOf(parse_unary(<>)),
+  "&" <Expression> => Expression::AddressOf(parse_unary(<>)),
+  "*" <Expression> => Expression::Dereference(parse_unary(<>)),
+  "-" <Expression> => Expression::Negate(parse_unary(<>)),
+  "~" <Expression> => Expression::BitwiseNot(parse_unary(<>)),
+  "!" <Expression> => Expression::LogicalNot(parse_unary(<>)),
+  "++" <Expression> => Expression::PreInc(parse_unary(<>)),
+  "--" <Expression> => Expression::PreDec(parse_unary(<>)),
+  "(" <t:TypeSpecifier> ")" <e:Expression> => Expression::Cast(Box::new(
+    CastExpr {
+      cast_to: t,
+      expr: e,
+    }
+  )),
+
+  #[precedence(level="4")] #[assoc(side="left")]
+  <l:Expression> "*" <r:Expression> => Expression::Multiply(parse_binary(l,r)),
+  <l:Expression> "/" <r:Expression> => Expression::Divide(parse_binary(l,r)),
+  <l:Expression> "%" <r:Expression> => Expression::Modulo(parse_binary(l,r)),
+
+  #[precedence(level="5")] #[assoc(side="left")]
+  <l:Expression> "+" <r:Expression> => Expression::Add(parse_binary(l,r)),
+  <l:Expression> "-" <r:Expression> => Expression::Subtract(parse_binary(l,r)),
+  
+  #[precedence(level="6")] #[assoc(side="left")]
+  <l:Expression> "<<" <r:Expression> => Expression::ShiftLeft(parse_binary(l,r)),
+  <l:Expression> ">>" <r:Expression> => Expression::ShiftRight(parse_binary(l,r)),
+  
+  #[precedence(level="7")] #[assoc(side="left")]
+  <l:Expression> "<" <r:Expression> => Expression::LTCompare(parse_binary(l,r)),
+  <l:Expression> ">" <r:Expression> => Expression::GTCompare(parse_binary(l,r)),
+  <l:Expression> "<=" <r:Expression> => Expression::LECompare(parse_binary(l,r)),
+  <l:Expression> ">=" <r:Expression> => Expression::GECompare(parse_binary(l,r)),
+
+  #[precedence(level="8")] #[assoc(side="left")]
+  <l:Expression> "==" <r:Expression> => Expression::Equality(parse_binary(l,r)),
+  <l:Expression> "!=" <r:Expression> => Expression::Inequality(parse_binary(l,r)),
+
+  #[precedence(level="9")] #[assoc(side="left")]
+  <l:Expression> "&" <r:Expression> => Expression::BitwiseAnd(parse_binary(l,r)),
+
+  #[precedence(level="10")] #[assoc(side="left")]
+  <l:Expression> "^" <r:Expression> => Expression::BitwiseXor(parse_binary(l,r)),
+
+  #[precedence(level="11")] #[assoc(side="left")]
+  <l:Expression> "|" <r:Expression> => Expression::BitwiseOr(parse_binary(l,r)),
+
+  #[precedence(level="12")] #[assoc(side="left")]
+  <l:Expression> "&&" <r:Expression> => Expression::LogicalAnd(parse_binary(l,r)),
+
+  #[precedence(level="13")] #[assoc(side="left")]
+  <l:Expression> "||" <r:Expression> => Expression::LogicalOr(parse_binary(l,r)),
+
+  #[precedence(level="14")] #[assoc(side="right")]
+  <c:Expression> "?" <t:Expression> ":" <f:Expression> => Expression::Ternary(
+    Box::new(TernaryExpr {
+      condition: c,
+      true_expr: t,
+      false_expr: f,
+    })
+  ),
+
+  #[precedence(level="15")] #[assoc(side="right")]
+  <l:Expression> "=" <r:Expression> => Expression::Assignment(parse_binary(l,r)),
 }
 
 TypeSpecifier: Type = {
