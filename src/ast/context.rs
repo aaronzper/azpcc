@@ -4,9 +4,15 @@ use crate::error::CompilerError;
 
 use super::Type;
 
+#[derive(Debug)]
 pub struct Context<'a> {
     scope: HashMap<String, Type>,
+
+    // None - We're not in a function
+    // Some(None) - We're in a function that is `void`
+    // Some(Some(T)) - We're in a function that returns T
     function_return: Option<Option<Type>>,
+
     parent: Option<&'a Context<'a>>
 }
 
