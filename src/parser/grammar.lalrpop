@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use crate::ast::*;
 use crate::ast::types::*;
+use crate::ast::declaration::*;
 
 use lalrpop_util::ParseError;
 
@@ -7,6 +10,8 @@ grammar;
 
 match {
     r"([A-Za-z_][A-Za-z0-9_]*)" => Identifier,
+    r"\d*" => IntLiteral,
+    r#"'(?:\\(?:[abfnrtv\\'"]|x[0-9A-Fa-f]+|[0-7]{1,3})|[^\\'])'"# => CharLiteral,
     _
 }
 
@@ -18,11 +23,11 @@ pub TransalationUnit: TranslationUnit = {
 
 TopLevelDecl: Declaration = {
   <FunctionDecl> => <>,
-  //<Decl> => <>,
+  <Decl> => <>,
 }
 
 FunctionDecl: Declaration = {
-  <r:FnTypeSpecifier> <n:Identifier> "(" <args:Comma<FunctionArg>> ")" ";" => {
+  <r:FnTypeSpecifier> <n:Identifier> "(" <args:Comma<FnArg>> ")" ";" => {
     let arg_types: Box<[Type]> = args.into_iter().map(|x| x.0).collect();
 
     Declaration {
@@ -36,17 +41,34 @@ FunctionDecl: Declaration = {
   }
 }
 
-FunctionArg: (Type, String) = {
-  <t:TypeSpecifier> <i:Identifier> => (t, String::from(i))
-}
-
-/*Decl: Declaration = {
-  
-}*/
-
+#[inline]
 FnTypeSpecifier: Option<Type> = {
   "void" => None,
   <TypeSpecifier> => Some(<>)
+}
+
+FnArg: (Type, String) = {
+  <t:TypeSpecifier> <i:Identifier> => (t, String::from(i))
+}
+
+Decl: Declaration = {
+  <t:TypeSpecifier> <n:Identifier> ";" => Declaration {
+    name: String::from(n),
+    type_of: t,
+    value: None,
+  },
+
+  <t:TypeSpecifier> <n:Identifier> "=" <e:Literal> ";" => Declaration {
+    name: String::from(n),
+    type_of: t,
+    value: Some(DeclarationValue::Variable(e)),
+  },
+}
+
+Literal: Expression = {
+  <IntLiteral> => Expression::IntLiteral(u64::from_str(<>).unwrap()),
+  <CharLiteral> =>? 
+    Err(ParseError::User { error: "Char literals not supported yet :(" }),
 }
 
 TypeSpecifier: Type = {
