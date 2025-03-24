@@ -1,6 +1,6 @@
 use lalrpop_util::lalrpop_mod;
 
-use crate::{ast::{statements::{IfStatement, WhileLoopStatement}, Expression, Statement, TranslationUnit}, error::CompilerError};
+use crate::{ast::TranslationUnit, error::CompilerError};
 
 pub mod helpers;
 
