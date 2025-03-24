@@ -25,31 +25,36 @@ impl SemanticUnit for Declaration {
             // If its just a declaration (not definition), nothing to verify
             None => (),
 
-            Some(val) => match val {
-                DeclarationValue::Variable(expr) => {
+            Some(DeclarationValue::Variable(expr)) => {
+                let is_global = context.return_type().is_none();
+
+                if is_global {
                     match expr {
                         Expression::IntLiteral(_) => (),
                         Expression::CharLiteral(_) => (),
                         Expression::StringLiteral(_) => (),
                         _ => return Err(CompilerError::SemanticError("Global variable assignment must be a literal\nConstant folding isn't currently supported")),
                     }
-                },
-                DeclarationValue::Function(stmts) => {
-                    let mut inner = context.inner();
+                } else {
+                    expr.verify_with_context(context)?;
+                }
+            },
 
-                    if let Type::Function(f) = &self.type_of {
-                        inner.set_return_type(f.return_type.clone())?;
+            Some(DeclarationValue::Function(stmts)) => {
+                let mut inner = context.inner();
 
-                        for (arg_n, arg_t) in &f.args {
-                            inner.add_name(arg_n.clone(), arg_t.clone())?;
-                        }
+                if let Type::Function(f) = &self.type_of {
+                    inner.set_return_type(f.return_type.clone())?;
 
-                        for stmt in stmts {
-                            stmt.verify_with_context(&mut inner)?;
-                        }
-                    } else {
-                        panic!("Encountered weird enum varient");
+                    for (arg_n, arg_t) in &f.args {
+                        inner.add_name(arg_n.clone(), arg_t.clone())?;
                     }
+
+                    for stmt in stmts {
+                        stmt.verify_with_context(&mut inner)?;
+                    }
+                } else {
+                    panic!("Encountered weird enum varient");
                 }
             }
         };

@@ -1,4 +1,4 @@
-use super::Type;
+use super::{SemanticUnit, Type};
 
 // TODO: Struct/pointer subfield accessing, +x, float literals
 #[derive(Debug)]
@@ -85,4 +85,13 @@ pub struct CastExpr {
 pub struct FuncCallExpr {
     pub func: Expression,
     pub args: Box<[Expression]>,
+}
+
+impl SemanticUnit for Expression {
+    fn verify_with_context(&self, context: &mut super::Context) -> 
+        Result<(), crate::error::CompilerError> {
+        
+        // TODO
+        Ok(())
+    }
 }
