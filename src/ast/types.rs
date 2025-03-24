@@ -23,6 +23,6 @@ pub enum Type {
 
 #[derive(Debug)]
 pub struct FunctionType {
-    pub return_type: Type,
+    pub return_type: Option<Type>,
     pub args: Box<[Type]>,
 }
