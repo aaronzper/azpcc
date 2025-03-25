@@ -1,7 +1,9 @@
 use std::fmt::Display;
 
+use crate::error::CompilerError;
+
 /// Represents an unsized, x86-64 general-purpose register
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Register {
     Rax = 0,
     Rbx = 1,
@@ -19,10 +21,10 @@ pub enum Register {
     R15 = 13,
 }
 
-const NUM_REGS: usize = 14;
+pub const NUM_REGS: u8 = 14;
 
 /// The registers used as function args, in the order that arguments are passed
-const ARG_REGS: [Register; 6] = [ 
+pub const ARG_REGS: [Register; 6] = [ 
     Register::Rdi,
     Register::Rsi,
     Register::Rdx,
@@ -30,6 +32,21 @@ const ARG_REGS: [Register; 6] = [
     Register::R8,
     Register::R9,
 ];
+
+impl TryFrom<u8> for Register {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        if value >= NUM_REGS {
+            return Err("Register number must be 0-13");
+        }
+
+        // This is safe cause we checked above that its legit
+        Ok(unsafe {
+            std::mem::transmute(value)
+        })
+    }
+}
 
 /// Represents a potential register size in x86
 pub enum RegisterSize {
