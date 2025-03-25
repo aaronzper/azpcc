@@ -55,9 +55,9 @@ FnDeclOpening: (String, Type) = {
 }
 
 #[inline]
-FnTypeSpecifier: Option<Type> = {
-  "void" => None,
-  <TypeSpecifier> => Some(<>)
+FnTypeSpecifier: Type = {
+  "void" => Type::Void,
+  <TypeSpecifier> => <>,
 }
 
 FnArg: (String, Type) = {

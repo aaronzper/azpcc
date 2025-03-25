@@ -1,5 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
+    Void,
+
     Uint8, // unsigned char
     Uint16,// unsigned short
     Uint32,// unsigned int
@@ -34,7 +36,7 @@ impl Type {
 
 #[derive(Debug, Clone, Eq)]
 pub struct FunctionType {
-    pub return_type: Option<Type>,
+    pub return_type: Type,
     pub args: Box<[(String, Type)]>,
 }
 

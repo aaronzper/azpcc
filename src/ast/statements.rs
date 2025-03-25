@@ -1,6 +1,6 @@
 use crate::error::CompilerError;
 
-use super::{Context, Declaration, Expression};
+use super::{Context, Declaration, Expression, Type};
 
 #[derive(Debug)]
 pub enum Statement {
@@ -78,23 +78,22 @@ fn verify_return(expr: &Option<Expression>, context: &mut Context) ->
     let expected_type = context
         .return_type()
         .ok_or(CompilerError::SemanticError("Cannot return from outside of a function"))?
-        .cloned();
+        .clone();
 
     match expr {
         Some(ex) => {
-            let actual_type = ex.verify(context)?;
-
-            if let Some(t) = expected_type {
-                if t != actual_type {
-                    return Err(CompilerError::SemanticError("Tried to return incorrect type"));
-                }
-            } else {
+            if expected_type == Type::Void {
                 return Err(CompilerError::SemanticError("Cannot return value from void fn"));
+            } 
+
+            let actual_type = ex.verify(context)?;
+            if expected_type != actual_type {
+                return Err(CompilerError::SemanticError("Tried to return incorrect type"));
             }
         },
 
         None => {
-            if expected_type.is_some() {
+            if expected_type != Type::Void {
                 return Err(CompilerError::SemanticError("Cannot return void from non-void fn"));
             }
         },

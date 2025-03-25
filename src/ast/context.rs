@@ -9,9 +9,8 @@ pub struct Context<'a> {
     scope: HashMap<String, Type>,
 
     // None - We're not in a function
-    // Some(None) - We're in a function that is `void`
-    // Some(Some(T)) - We're in a function that returns T
-    function_return: Option<Option<Type>>,
+    // Some(T) - We're in a function that returns T
+    function_return: Option<Type>,
 
     parent: Option<&'a Context<'a>>
 }
@@ -57,17 +56,17 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn return_type(&self) -> Option<Option<&Type>> {
+    pub fn return_type(&self) -> Option<&Type> {
         match &self.function_return {
-            Some(t) => Some(t.as_ref()),
             None => match self.parent {
                 Some(p) => p.return_type(),
                 None => None,
-            }
+            },
+            x => x.as_ref(),
         }
     }
 
-    pub fn set_return_type(&mut self, t: Option<Type>) -> Result<(), CompilerError> {
+    pub fn set_return_type(&mut self, t: Type) -> Result<(), CompilerError> {
         if self.return_type().is_some() {
             // If we're trying to redefine the return type, it means we're
             // (somehow) defining a function while within another
