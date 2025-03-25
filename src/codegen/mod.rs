@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use target_lexicon::Architecture;
+use x86_64::X86_64Generator;
 
 use crate::{ast::TranslationUnit, error::CompilerError};
 
@@ -27,7 +28,7 @@ pub fn get_generator(arch: &Architecture) ->
     Result<Box<dyn Generator>, CompilerError> {
 
     match arch {
-        Architecture::X86_64 => todo!(),
+        Architecture::X86_64 => Ok(Box::new(X86_64Generator::new())),
         _ => Err(CompilerError::NotSupported("Targeting non x86_64")),
     }
 }
