@@ -2,7 +2,7 @@ use std::{collections::VecDeque, path::Path};
 
 use indexmap::IndexMap;
 use lalrpop_util::lalrpop_mod;
-use log::{debug, trace};
+use log::trace;
 
 use crate::{error::CompilerError, fs::read_file};
 
