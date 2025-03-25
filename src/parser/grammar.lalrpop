@@ -177,7 +177,7 @@ Expression: Expression = {
 TypeSpecifier: Type = {
   <TypeSpecifier> "*" => Type::Pointer(Box::new(<>)),
 
-  "signed" <InnerTypeSpecifier> =>? match <> {
+  "signed" <TypeSpecifier> =>? match <> {
     Type::Uint8 => Ok(Type::Int8),
     Type::Uint16 => Ok(Type::Int16),
     Type::Uint32 => Ok(Type::Int32),
@@ -192,7 +192,7 @@ TypeSpecifier: Type = {
       Err(ParseError::User { error: "'signed' must preceede an integer type" })
   },
 
-  "unsigned" <InnerTypeSpecifier> =>? match <> {
+  "unsigned" <TypeSpecifier> =>? match <> {
     Type::Int8 => Ok(Type::Uint8),
     Type::Int16 => Ok(Type::Uint16),
     Type::Int32 => Ok(Type::Uint32),
