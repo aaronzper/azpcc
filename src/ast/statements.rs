@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::error::CompilerError;
 
 use super::{Context, Declaration, Expression, Type};
@@ -104,6 +106,8 @@ fn verify_return(expr: &Option<Expression>, context: &mut Context) ->
 
 impl Statement {
     pub fn verify(&self, context: &mut Context) -> Result<(), CompilerError> {
+        trace!("Semantically checking {:?}", self);
+
         match self {
             Self::Compound(stmts) => verify_compound(stmts, context)?,
             Self::Declaration(decl) => decl.verify(context)?,

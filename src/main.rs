@@ -90,8 +90,10 @@ fn entry() -> Result<(), CompilerError> {
 
     debug!("Starting compiler withs args {:?}", args);
 
-    info!("Starting preprocessing");
-    let files_preproccessed = args.files.iter().map(|ref s| preprocess(s));
+    let files_preproccessed = args.files.iter().enumerate().map(|(i, ref s)| {
+        info!("Preprocessing {}", args.files[i].display());
+        preprocess(s)
+    });
 
     if args.preprocess_only {
         for file in files_preproccessed {
@@ -101,10 +103,11 @@ fn entry() -> Result<(), CompilerError> {
         return Ok(());
     }
 
-    info!("Starting parsing");
-    let files_parsed = files_preproccessed.map(|s| match s {
+    let files_parsed = files_preproccessed.enumerate().map(|(i, s)| match s {
         Ok(x) => {
+            info!("Parsing {}", args.files[i].display());
             let parsed = parse(&x)?;
+            info!("Semantically checking {}", args.files[i].display());
             parsed.verify(&mut Context::new())?;
             Ok(parsed)
         },

@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::error::CompilerError;
 
 use super::{Context, Type};
@@ -181,6 +183,8 @@ impl Expression {
 
     /// Verifies the expression and returns its type
     pub fn verify(&self, context: &mut Context) -> Result<Type, CompilerError> {
+        trace!("Semantically checking {:?}", self);
+
         // TODO: Implicit casts
         match self {
             Self::Assignment(x) => {

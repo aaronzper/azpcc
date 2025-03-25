@@ -86,8 +86,6 @@ fn get_directives(path: &Path) -> Result<VecDeque<Directive>, CompilerError> {
 }
 
 pub fn preprocess(path: &Path) -> Result<String, CompilerError> {
-    debug!("Preprocessing {:?}", path);
-
     let mut directives = get_directives(path)?;
     trace!("Produced directives: {:?}", directives);
 

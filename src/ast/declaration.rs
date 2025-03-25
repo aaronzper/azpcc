@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::error::CompilerError;
 
 use super::{Context, Expression, Statement, Type};
@@ -17,6 +19,8 @@ pub enum DeclarationValue {
 
 impl Declaration {
     pub fn verify(&self, context: &mut Context) -> Result<(), CompilerError> {
+        trace!("Semantically checking {:?}", self);
+
         context.add_name(self.name.clone(), self.type_of.clone())?;
 
         match &self.value {
