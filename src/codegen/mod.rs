@@ -1,15 +1,33 @@
 use std::path::Path;
 
-use target_lexicon::Triple;
+use target_lexicon::Architecture;
 
-use crate::error::CompilerError;
+use crate::{ast::TranslationUnit, error::CompilerError};
 
 pub mod triple;
 mod x86_64;
 
-pub fn generate(triple: Triple, output: &Path) -> Result<(), CompilerError> {
-    match triple.architecture {
-        target_lexicon::Architecture::X86_64 => x86_64::generate(triple, output),
-        _ => Err(CompilerError::NotSupported("Compiling other than x86-64")),
+pub struct AssemblerOptions<'a> {
+    /// Link to final executable - false corresponds to -c flag
+    pub link: bool,
+
+    /// Path to output file
+    pub output: &'a Path, 
+}
+
+pub trait Generator {
+    fn generate(&self, trans_unit: &TranslationUnit) -> 
+        Result<String, CompilerError>;
+
+    fn assemble(&self, assembly: &[String], options: &AssemblerOptions) 
+        -> Result<(), CompilerError>;
+}
+
+pub fn get_generator(arch: &Architecture) -> 
+    Result<Box<dyn Generator>, CompilerError> {
+
+    match arch {
+        Architecture::X86_64 => todo!(),
+        _ => Err(CompilerError::NotSupported("Targeting non x86_64")),
     }
 }

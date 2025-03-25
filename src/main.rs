@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use ast::Context;
 use clap::{Parser, ValueEnum};
-use codegen::{triple::get_triple, generate};
+use codegen::{get_generator, AssemblerOptions};
 use colog::basic_builder;
 use error::CompilerError;
 use log::{debug, info, error, LevelFilter};
@@ -122,11 +122,36 @@ fn entry() -> Result<(), CompilerError> {
         return Ok(());
     }
 
-    let triple = get_triple();
+    let generator = get_generator(&target_lexicon::Architecture::X86_64)?;
 
-    info!("Starting code generation for {}", triple);
+    let assembly = files_parsed.enumerate().map(|(i, x)| match x {
+        Ok(trans_unit) => {
+            info!("Generating assembly for {}", args.files[i].display());
+            generator.generate(&trans_unit)
+        },
+        Err(e) => Err(e),
+    });
 
-    generate(triple, Path::new("a.o"))
+    if args.emit_assembly {
+        for file in assembly {
+            println!("{}", file?);
+        }
+
+        return Ok(());
+    }
+
+    let asm_collected: Result<Box<[String]>, CompilerError> =
+        assembly.collect();
+
+    let asm_options = AssemblerOptions {
+        link: !args.compile_only,
+        output: match &args.output {
+            Some(p) => p,
+            None => Path::new("a.out"),
+        }
+    };
+
+    generator.assemble(&asm_collected?, &asm_options)
 }
 
 fn main() {
