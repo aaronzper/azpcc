@@ -1,6 +1,6 @@
 use crate::error::CompilerError;
 
-use super::{Expression, Statement, Type};
+use super::{Context, Expression, Statement, Type};
 
 #[derive(Debug)]
 pub struct Declaration {
@@ -16,9 +16,7 @@ pub enum DeclarationValue {
 }
 
 impl Declaration {
-    pub fn verify(&self, context: &mut super::Context) -> 
-            Result<(), CompilerError> {
-    
+    pub fn verify(&self, context: &mut Context) -> Result<(), CompilerError> {
         context.add_name(self.name.clone(), self.type_of.clone())?;
 
         match &self.value {
@@ -36,7 +34,10 @@ impl Declaration {
                         _ => return Err(CompilerError::SemanticError("Global variable assignment must be a literal\nConstant folding isn't currently supported")),
                     }
                 } else {
-                    expr.verify(context)?;
+                    let t = expr.verify(context)?;
+                    if t != self.type_of {
+                        return Err(CompilerError::SemanticError("Declaration type must match"));
+                    }
                 }
             },
 
