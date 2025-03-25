@@ -85,7 +85,7 @@ ExprNoPrec: Expression = {
 
 Expression: Expression = {
   #[precedence(level="0")]
-  "(" <Expression> ")" => <>,
+  "(" <ExprNoPrec> ")" => <>,
   <IntLiteral> => Expression::IntLiteral(u64::from_str(<>).unwrap()),
   <CharLiteral> =>? 
     Err(ParseError::User { error: "Char literals not supported yet :(" }),
