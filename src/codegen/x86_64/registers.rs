@@ -49,6 +49,7 @@ impl TryFrom<u8> for Register {
 }
 
 /// Represents a potential register size in x86
+#[derive(Copy, Clone)]
 pub enum RegisterSize {
     QWord,// 64bit
     DWord,// 32bit

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::codegen::error::CodegenError;
 
@@ -6,7 +6,7 @@ use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegist
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
-    scratches: RefCell<HashMap<Register, bool>>,
+    scratches: Rc<RefCell<HashMap<Register, bool>>>,
 
     /// Used for coming up with .L# labels
     label_counter: u64,
@@ -20,6 +20,10 @@ pub struct GeneratorInstance {
 
     /// Global symbols that are linkable by others
     globals: Vec<String>,
+
+    /// The label to jump to to return. Undefined if we're not in a function
+    /// (don't feel like dealing with Options)
+    pub return_label: u64,
 
     /// The actual instructions we're making
     instructions: String,
@@ -45,17 +49,18 @@ impl GeneratorInstance {
         }
 
         GeneratorInstance {
-            scratches: RefCell::new(scratches),
+            scratches: Rc::new(RefCell::new(scratches)),
             label_counter: 0,
             scopes: vec![HashMap::new()],
             externs: vec![],
             globals: vec![],
+            return_label: 0,
             instructions: String::new(),
         }
     }
 
     pub fn alloc_scratch<'a>(&'a self, size: RegisterSize) -> 
-        Result<Scratch<'a>, CodegenError> {
+        Result<Scratch, CodegenError> {
 
         let mut scratches = self.scratches.borrow_mut();
         
@@ -68,18 +73,19 @@ impl GeneratorInstance {
 
         Ok(Scratch {
             reg: SizedRegister { reg, size },
-            generator: self
+            scratches: self.scratches.clone(),
         })
     }
 
-    pub fn add_label(&mut self) -> String {
+    pub fn new_label(&mut self) -> u64 {
         let id = self.label_counter;
         self.label_counter += 1;
+        id
+    }
 
+    pub fn add_label(&mut self, id: u64) {
         let label = format!(".L{}", id);
         self.instructions.push_str(&format!("{}:", label));
-
-        label
     }
 
     pub fn get_symbol_asm(&self, symbol: &str) -> Option<&str> {
@@ -147,14 +153,14 @@ impl GeneratorInstance {
 }
 
 /// "Owns" a scratch register
-pub struct Scratch<'a> {
+pub struct Scratch {
     pub reg: SizedRegister,
-    pub generator: &'a GeneratorInstance,
+    scratches: Rc<RefCell<HashMap<Register, bool>>>,
 }
 
-impl<'a> Drop for Scratch<'a> {
+impl Drop for Scratch {
     fn drop(&mut self) {
-        let mut scratches = self.generator.scratches.borrow_mut();
+        let mut scratches = self.scratches.borrow_mut();
         scratches.insert(self.reg.reg, false);
     }
 }

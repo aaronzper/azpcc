@@ -21,12 +21,15 @@ impl GeneratorInstance {
                         Instr::Mov("RBP".to_string(), "RSP".to_string())
                     );
 
+                    self.return_label = self.new_label();
+
                     // TODO: set up args
 
                     for stmt in stmts {
                         self.gen_statement(stmt)?;
                     }
 
+                    self.add_label(self.return_label);
                     self.add_instr(
                         Instr::Mov("RSP".to_string(), "RBP".to_string())
                     );
