@@ -144,7 +144,7 @@ impl GeneratorInstance {
     }
 
     pub fn get_instructions(&self) -> String {
-        let mut asm = String::from("BITS 64\n\n");
+        let mut asm = String::from("BITS 64\nDEFAULT REL\n\n");
 
         for e in &self.externs {
             asm.push_str(&format!("EXTERN {}\n", e));
