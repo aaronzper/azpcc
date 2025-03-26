@@ -20,7 +20,7 @@ pub enum CompilerError {
     SemanticError(&'static str),
 
     #[error("Compiliation Error: {0}")]
-    CodegenError(CodegenError)
+    CodegenError(#[from] CodegenError),
 
     #[error("{0}")]
     Custom(&'static str),

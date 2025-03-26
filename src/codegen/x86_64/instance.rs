@@ -3,7 +3,6 @@ use std::{cell::RefCell, collections::HashMap};
 use crate::codegen::error::CodegenError;
 
 use super::registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS};
-use super::scratch::Scratch;
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
@@ -14,7 +13,16 @@ pub struct GeneratorInstance {
 
     /// Stack of scopes, maps symbol name to asm code for it. 0 is global, 1 is
     /// function scope, 2 is some scope inside that, etc
-    scopes: Vec<HashMap<String, String>>
+    scopes: Vec<HashMap<String, String>>,
+
+    /// External symbols we'll link to later
+    externs: Vec<String>,
+
+    /// Global symbols that are linkable by others
+    globals: Vec<String>,
+
+    /// The actual instructions we're making
+    instructions: String,
 }
 
 impl GeneratorInstance {
@@ -33,6 +41,9 @@ impl GeneratorInstance {
             scratches: RefCell::new(scratches),
             label_counter: 0,
             scopes: vec![HashMap::new()],
+            externs: vec![],
+            globals: vec![],
+            instructions: String::new(),
         }
     }
 
@@ -54,11 +65,14 @@ impl GeneratorInstance {
         })
     }
 
-    fn create_label(&mut self) -> String {
-        let label = self.label_counter;
+    fn add_label(&mut self) -> String {
+        let id = self.label_counter;
         self.label_counter += 1;
 
-        format!(".L{}", label)
+        let label = format!(".L{}", id);
+        self.instructions.push_str(&format!("{}:", label));
+
+        label
     }
 
     fn get_symbol_asm(&self, symbol: &str) -> Option<&str> {
@@ -71,5 +85,35 @@ impl GeneratorInstance {
 
         None
     }
+
+    pub fn get_instructions(&self) -> String {
+        let mut instructions = String::from("BITS 64\n\n");
+
+        for e in &self.externs {
+            instructions.push_str(&format!("EXTERN {}\n", e));
+        }
+
+        for g in &self.globals {
+            instructions.push_str(&format!("GLOBAL {}\n", g));
+        }
+        
+        instructions.push_str("\nSECTION .text\n");
+
+        instructions.push_str(&self.instructions);
+
+        instructions
+    }
 }
 
+/// "Owns" a scratch register
+pub struct Scratch<'a> {
+    pub reg: SizedRegister,
+    pub generator: &'a GeneratorInstance,
+}
+
+impl<'a> Drop for Scratch<'a> {
+    fn drop(&mut self) {
+        let mut scratches = self.generator.scratches.borrow_mut();
+        scratches.insert(self.reg.reg, false);
+    }
+}

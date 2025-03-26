@@ -127,7 +127,8 @@ fn entry() -> Result<(), CompilerError> {
     let assembly = files_parsed.enumerate().map(|(i, x)| match x {
         Ok(trans_unit) => {
             info!("Generating assembly for {}", args.files[i].display());
-            generator.generate(&trans_unit)
+            let asm = generator.generate(&trans_unit)?;
+            Ok(asm)
         },
         Err(e) => Err(e),
     });
@@ -151,7 +152,9 @@ fn entry() -> Result<(), CompilerError> {
         }
     };
 
-    generator.assemble(&asm_collected?, &asm_options)
+    generator.assemble(&asm_collected?, &asm_options)?;
+
+    Ok(())
 }
 
 fn main() {

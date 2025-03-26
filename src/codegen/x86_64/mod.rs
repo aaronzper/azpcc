@@ -1,6 +1,8 @@
 mod registers;
-mod scratch;
 mod instance;
+mod declaration;
+mod statement;
+mod expression;
 
 use instance::GeneratorInstance;
 use crate::ast::TranslationUnit;
@@ -20,7 +22,11 @@ impl Generator for X86_64Generator {
 
         let instance = GeneratorInstance::new();
 
-        todo!()
+        for decl in &trans_unit.declarations {
+            instance.gen_declaration(decl)?;
+        }
+
+        Ok(instance.get_instructions())
     }
 
     fn assemble(&self, assembly: &[String], options: &AssemblerOptions) ->
