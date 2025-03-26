@@ -2,6 +2,8 @@ use std::io;
 use lalrpop_util::{lexer::Token, ParseError};
 use thiserror::Error;
 
+use crate::codegen::error::CodegenError;
+
 #[derive(Error, Debug)]
 pub enum CompilerError {
     #[error("File Error: {0}")]
@@ -16,6 +18,9 @@ pub enum CompilerError {
 
     #[error("Semantic Error: {0}")]
     SemanticError(&'static str),
+
+    #[error("Compiliation Error: {0}")]
+    CodegenError(CodegenError)
 
     #[error("{0}")]
     Custom(&'static str),

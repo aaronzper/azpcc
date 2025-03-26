@@ -1,9 +1,9 @@
-use super::{registers::SizedRegister, X86_64Generator};
+use super::{registers::SizedRegister, GeneratorInstance};
 
 /// "Owns" a scratch register
 pub struct Scratch<'a> {
     pub reg: SizedRegister,
-    pub generator: &'a X86_64Generator,
+    pub generator: &'a GeneratorInstance,
 }
 
 impl<'a> Drop for Scratch<'a> {

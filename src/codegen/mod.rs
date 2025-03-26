@@ -1,11 +1,13 @@
 use std::path::Path;
 
+use error::CodegenError;
 use target_lexicon::Architecture;
 use x86_64::X86_64Generator;
 
 use crate::{ast::TranslationUnit, error::CompilerError};
 
 pub mod triple;
+pub mod error;
 mod x86_64;
 
 pub struct AssemblerOptions<'a> {
@@ -18,10 +20,10 @@ pub struct AssemblerOptions<'a> {
 
 pub trait Generator {
     fn generate(&self, trans_unit: &TranslationUnit) -> 
-        Result<String, CompilerError>;
+        Result<String, CodegenError>;
 
-    fn assemble(&self, assembly: &[String], options: &AssemblerOptions) 
-        -> Result<(), CompilerError>;
+    fn assemble(&self, assembly: &[String], options: &AssemblerOptions) ->
+        Result<(), CodegenError>;
 }
 
 pub fn get_generator(arch: &Architecture) -> 
