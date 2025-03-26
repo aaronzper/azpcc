@@ -1,5 +1,5 @@
 mod registers;
-mod sizes;
+mod helpers;
 mod instructions;
 mod instance;
 mod declaration;

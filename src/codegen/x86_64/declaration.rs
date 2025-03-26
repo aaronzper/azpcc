@@ -11,30 +11,22 @@ impl GeneratorInstance {
 
         match &decl.value {
             None => {
-                let is_fn = if let Type::Function(_) = decl.type_of {
-                    true
-                } else { false };
-
-                let asm_rep = if is_fn {
-                    symbol.clone()
-                } else {
-                    format!("[{}]", symbol)
-                };
-
                 if decl.external {
-                    self.add_extern(symbol.clone(), asm_rep);
+                    self.add_extern(symbol.clone(), decl.type_of.clone());
                 } else {
-                    self.add_symbol(symbol.clone(), asm_rep);
+                    self.add_symbol(symbol.clone(), decl.type_of.clone());
 
-                    if !is_fn {
-                        self.add_bss(symbol, &decl.type_of);
-                    }
+                    match decl.type_of {
+                        Type::Function(_) => (),
+                        _ => self.add_bss(symbol, &decl.type_of),
+                    };
                 }
             },
 
             Some(val) => match (self.global_scope(), val)  {
                 (true, DeclarationValue::Function(stmts)) => {
-                    self.add_fn_symbol(symbol);
+                    self.add_symbol(symbol.clone(), decl.type_of.clone());
+                    self.add_fn_label(symbol);
 
                     let ret_label = self.new_label();
                     self.return_label = Some(ret_label);
@@ -63,7 +55,7 @@ impl GeneratorInstance {
                 },
 
                 (true, DeclarationValue::Variable(e)) => {
-                    self.add_symbol(symbol.clone(), format!("[{}]", symbol));
+                    self.add_symbol(symbol.clone(), decl.type_of.clone());
                     // TODO: Finish
                 }
 

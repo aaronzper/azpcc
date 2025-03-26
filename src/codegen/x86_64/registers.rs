@@ -57,6 +57,17 @@ pub enum RegisterSize {
     Byte, // 8bit
 }
 
+impl Display for RegisterSize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::QWord => write!(f, "QWORD"),
+            Self::DWord => write!(f, "DWORD"),
+            Self::Word => write!(f, "WORD"),
+            Self::Byte => write!(f, "BYTE"),
+        }
+    }
+}
+
 pub struct SizedRegister {
     pub reg: Register,
     pub size: RegisterSize,

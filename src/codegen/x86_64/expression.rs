@@ -1,6 +1,6 @@
 use crate::{ast::Expression, codegen::error::CodegenError};
 
-use super::{instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::RegisterSize};
+use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::RegisterSize};
 
 impl GeneratorInstance {
     pub fn gen_expr(&mut self, expr: &Expression) -> 
@@ -9,8 +9,8 @@ impl GeneratorInstance {
         match expr {
             Expression::Assignment(x) => {
                 if let Expression::Identifier(id) = &x.first {
-                    let symbol = self.get_symbol_asm(&id)
-                        .expect("Undefined").to_string();
+                    let (symbol, _) = self.get_symbol(&id)
+                        .expect("Undefined").to_owned();
 
                     let scratch = self.gen_expr(&x.second)?;
 
@@ -37,19 +37,19 @@ impl GeneratorInstance {
             },
 
             Expression::Identifier(id) => {
-                let scratch = self.alloc_scratch(RegisterSize::QWord)?;
-                let symbol = self.get_symbol_asm(&id).expect("Undefined");
+                let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
+                let scratch = self.alloc_scratch(get_size(type_of))?;
 
                 let instr = Instr::Mov(
                     scratch.reg.to_string(),
-                    symbol.to_string());
+                    sym.to_owned());
                 self.add_instr(instr);
 
                 Ok(scratch)
             }
 
             Expression::IntLiteral(x) => {
-                let scratch = self.alloc_scratch(RegisterSize::QWord)?;
+                let scratch = self.alloc_scratch(RegisterSize::DWord)?;
                 let instr = Instr::Mov(scratch.reg.to_string(), x.to_string());
                 self.add_instr(instr);
                 Ok(scratch)

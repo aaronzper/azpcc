@@ -2,9 +2,9 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use log::trace;
 
-use crate::{ast::Type, codegen::error::CodegenError};
+use crate::{ast::{types::FunctionType, Type}, codegen::{error::CodegenError, x86_64::helpers::get_asm}};
 
-use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, sizes::get_size};
+use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, helpers::{get_size, get_bytes}};
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
@@ -15,7 +15,7 @@ pub struct GeneratorInstance {
 
     /// Stack of scopes, maps symbol name to asm code for it. 0 is global, 1 is
     /// function scope, 2 is some scope inside that, etc
-    scopes: Vec<HashMap<String, String>>,
+    scopes: Vec<HashMap<String, (String, Type)>>,
 
     /// External symbols we'll link to later
     externs: Vec<String>,
@@ -89,11 +89,14 @@ impl GeneratorInstance {
     }
 
     pub fn add_label(&mut self, id: u64) {
-        let label = format!(".L{}", id);
-        self.instructions.push_str(&format!("{}:", label));
+        self.instructions.push_str(&format!(".L{}:", id));
     }
 
-    pub fn get_symbol_asm(&self, symbol: &str) -> Option<&str> {
+    pub fn add_fn_label(&mut self, label: String) {
+        self.instructions.push_str(&format!("{}:\n", label));
+    }
+
+    pub fn get_symbol(&self, symbol: &str) -> Option<&(String, Type)> {
         for scope in self.scopes.iter().rev() {
             match scope.get(symbol) {
                 Some(s) => return Some(s),
@@ -110,28 +113,26 @@ impl GeneratorInstance {
 
     pub fn exit_scope(&mut self) { self.scopes.pop(); }
 
-    pub fn add_fn_symbol(&mut self, symbol: String) {
-        self.add_symbol(symbol.clone(), symbol.clone());
-        self.instructions.push_str(&format!("{}:\n", symbol));
-    }
+    pub fn add_symbol(&mut self, symbol: String, type_of: Type) {
+        let asm = get_asm(&symbol, &type_of);
 
-    pub fn add_symbol(&mut self, symbol: String, asm: String) {
-        let is_global = self.global_scope();
-
-        if is_global {
+        if self.global_scope() {
             self.globals.push(symbol.clone());
         }
 
         trace!("Adding symbol {} as {}", symbol, asm);
 
         // unwrap is allowed cause we should always have at least 1
-        self.scopes.last_mut().unwrap().insert(symbol, asm);
+        self.scopes.last_mut().unwrap().insert(symbol, (asm, type_of));
     }
 
-    pub fn add_extern(&mut self, symbol: String, asm: String) {
+    pub fn add_extern(&mut self, symbol: String, type_of: Type) {
         assert!(self.global_scope());
+
         self.externs.push(symbol.clone());
-        self.scopes.last_mut().unwrap().insert(symbol, asm);
+
+        let asm = get_asm(&symbol, &type_of);
+        self.scopes.last_mut().unwrap().insert(symbol, (asm, type_of));
     }
     
     pub fn add_instr(&mut self, instr: Instr) {
@@ -139,7 +140,7 @@ impl GeneratorInstance {
     }
 
     pub fn add_bss(&mut self, symbol: String, type_of: &Type) {
-        let size = get_size(type_of);
+        let size = get_bytes(type_of);
         self.bss.push_str(&format!("{}: resb {}\n", symbol, size));
     }
 
