@@ -14,6 +14,9 @@ impl GeneratorInstance {
             Some(val) => match (self.global_scope(), val)  {
                 (true, DeclarationValue::Function(stmts)) => {
                     self.add_fn_symbol(symbol);
+
+                    let ret_label = self.new_label();
+                    self.return_label = Some(ret_label);
                     self.enter_scope();
 
                     self.add_instr(Instr::Push("RBP".to_string()));
@@ -21,21 +24,20 @@ impl GeneratorInstance {
                         Instr::Mov("RBP".to_string(), "RSP".to_string())
                     );
 
-                    self.return_label = self.new_label();
-
                     // TODO: set up args
 
                     for stmt in stmts {
                         self.gen_statement(stmt)?;
                     }
 
-                    self.add_label(self.return_label);
+                    self.add_label(ret_label);
                     self.add_instr(
                         Instr::Mov("RSP".to_string(), "RBP".to_string())
                     );
                     self.add_instr(Instr::Pop("RBP".to_string()));
                     self.add_instr(Instr::Ret);
 
+                    self.return_label = None;
                     self.exit_scope();
                 },
 

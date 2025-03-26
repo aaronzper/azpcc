@@ -38,7 +38,7 @@ impl GeneratorInstance {
                     );
                 }
 
-                self.add_instr(Instr::Jmp(self.return_label));
+                self.add_instr(Instr::Jmp(self.return_label.unwrap()));
             },
         };
 

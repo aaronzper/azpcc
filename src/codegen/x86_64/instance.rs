@@ -21,9 +21,8 @@ pub struct GeneratorInstance {
     /// Global symbols that are linkable by others
     globals: Vec<String>,
 
-    /// The label to jump to to return. Undefined if we're not in a function
-    /// (don't feel like dealing with Options)
-    pub return_label: u64,
+    /// The label to jump to to return, if we're in a fn
+    pub return_label: Option<u64>,
 
     /// The actual instructions we're making
     instructions: String,
@@ -54,7 +53,7 @@ impl GeneratorInstance {
             scopes: vec![HashMap::new()],
             externs: vec![],
             globals: vec![],
-            return_label: 0,
+            return_label: None,
             instructions: String::new(),
         }
     }
