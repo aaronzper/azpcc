@@ -24,20 +24,27 @@ pub TransalationUnit: TranslationUnit = {
 }
 
 TopLevelDecl: Declaration = {
-  <FunctionDecl> => <>,
+  "extern"? <FunctionDecl> => <>,
   <Decl> => <>,
+  "extern" <Decl> => {
+    let mut orig = <>;
+    orig.external = true;
+    orig
+  }
 }
 
 FunctionDecl: Declaration = {
   <FnDeclOpening> ";" => Declaration {
     name: <>.0,
     type_of: <>.1,
+    external: true,
     value: None,
   },
 
   <o:FnDeclOpening> <b:StatementList> => Declaration {
     name: o.0,
     type_of: o.1,
+    external: false,
     value: Some(DeclarationValue::Function(b)),
   }
 }
@@ -68,12 +75,14 @@ Decl: Declaration = {
   <t:TypeSpecifier> <n:Identifier> ";" => Declaration {
     name: String::from(n),
     type_of: t,
+    external: false,
     value: None,
   },
 
   <t:TypeSpecifier> <n:Identifier> "=" <e:Expression> ";" => Declaration {
     name: String::from(n),
     type_of: t,
+    external: false,
     value: Some(DeclarationValue::Variable(e)),
   },
 }

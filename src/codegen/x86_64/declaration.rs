@@ -10,7 +10,19 @@ impl GeneratorInstance {
         let symbol = decl.name.clone();
 
         match &decl.value {
-            None => self.add_extern(symbol),
+            None => {
+                let asm_rep = match decl.type_of {
+                    crate::ast::Type::Function(_) => symbol.clone(),
+                    _ => format!("[{}]", symbol),
+                };
+
+                if decl.external {
+                    self.add_extern(symbol.clone(), asm_rep);
+                } else {
+                    self.add_symbol(symbol.clone(), asm_rep);
+                }
+            },
+
             Some(val) => match (self.global_scope(), val)  {
                 (true, DeclarationValue::Function(stmts)) => {
                     self.add_fn_symbol(symbol);
@@ -42,7 +54,7 @@ impl GeneratorInstance {
                 },
 
                 (true, DeclarationValue::Variable(e)) => {
-                    self.add_symbol(symbol.clone(), symbol);
+                    self.add_symbol(symbol.clone(), format!("[{}]", symbol));
                     // TODO: Finish
                 }
 

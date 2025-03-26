@@ -18,7 +18,7 @@ impl GeneratorInstance {
             },
 
             Expression::IntLiteral(x) => {
-                let scratch = self.alloc_scratch(RegisterSize::Byte)?;
+                let scratch = self.alloc_scratch(RegisterSize::QWord)?;
                 let instr = Instr::Mov(scratch.reg.to_string(), x.to_string());
                 self.add_instr(instr);
                 Ok(scratch)

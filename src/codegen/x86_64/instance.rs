@@ -1,5 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use log::trace;
+
 use crate::codegen::error::CodegenError;
 
 use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}};
@@ -112,20 +114,20 @@ impl GeneratorInstance {
     pub fn add_symbol(&mut self, symbol: String, asm: String) {
         let is_global = self.global_scope();
 
-        if is_global && symbol != asm {
-            panic!("Assembly-representation of global symbol must match the symbol itself. (This shouldn't happen)");
-        }
-
         if is_global {
             self.globals.push(symbol.clone());
         }
+
+        trace!("Adding symbol {} as {}", symbol, asm);
 
         // unwrap is allowed cause we should always have at least 1
         self.scopes.last_mut().unwrap().insert(symbol, asm);
     }
 
-    pub fn add_extern(&mut self, symbol: String) {
-        self.externs.push(symbol);
+    pub fn add_extern(&mut self, symbol: String, asm: String) {
+        assert!(self.global_scope());
+        self.externs.push(symbol.clone());
+        self.scopes.last_mut().unwrap().insert(symbol, asm);
     }
     
     pub fn add_instr(&mut self, instr: Instr) {

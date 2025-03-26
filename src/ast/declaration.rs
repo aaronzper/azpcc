@@ -8,6 +8,7 @@ use super::{Context, Expression, Statement, Type};
 pub struct Declaration {
     pub name: String,
     pub type_of: Type,
+    pub external: bool,
     pub value: Option<DeclarationValue>,
 }
 
@@ -23,11 +24,11 @@ impl Declaration {
 
         context.add_name(self.name.clone(), self.type_of.clone())?;
 
-        match &self.value {
+        match (self.external, &self.value) {
             // If its just a declaration (not definition), nothing to verify
-            None => (),
+            (_, None) => (),
 
-            Some(DeclarationValue::Variable(expr)) => {
+            (false, Some(DeclarationValue::Variable(expr))) => {
                 let is_global = context.return_type().is_none();
 
                 if is_global {
@@ -45,7 +46,7 @@ impl Declaration {
                 }
             },
 
-            Some(DeclarationValue::Function(stmts)) => {
+            (false, Some(DeclarationValue::Function(stmts))) => {
                 let mut inner = context.inner();
 
                 if let Type::Function(f) = &self.type_of {
@@ -61,7 +62,9 @@ impl Declaration {
                 } else {
                     panic!("Encountered weird enum varient");
                 }
-            }
+            },
+
+            (true, Some(_)) => return Err(CompilerError::SemanticError("Can't define extern ")),
         };
 
         Ok(())
