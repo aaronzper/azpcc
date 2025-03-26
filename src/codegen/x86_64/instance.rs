@@ -31,8 +31,15 @@ impl GeneratorInstance {
         
         for i in 0..NUM_REGS {
             let reg = i.try_into().unwrap();
-            let used = ARG_REGS.contains(&reg);
-            if !used { // Don't arg regs for now (TODO: change)
+
+            // Don't use non-callee-saved regs for now (args, Rax, R10, R11)
+            // TODO: Change
+            let used = ARG_REGS.contains(&reg) 
+                || reg == Register::Rax 
+                || reg == Register::R10 
+                || reg == Register::R11;
+
+            if !used { 
                 scratches.insert(reg, false);
             }
         }
@@ -47,7 +54,7 @@ impl GeneratorInstance {
         }
     }
 
-    fn alloc_scratch<'a>(&'a self, size: RegisterSize) -> 
+    pub fn alloc_scratch<'a>(&'a self, size: RegisterSize) -> 
         Result<Scratch<'a>, CodegenError> {
 
         let mut scratches = self.scratches.borrow_mut();
@@ -65,7 +72,7 @@ impl GeneratorInstance {
         })
     }
 
-    fn add_label(&mut self) -> String {
+    pub fn add_label(&mut self) -> String {
         let id = self.label_counter;
         self.label_counter += 1;
 
@@ -75,7 +82,7 @@ impl GeneratorInstance {
         label
     }
 
-    fn get_symbol_asm(&self, symbol: &str) -> Option<&str> {
+    pub fn get_symbol_asm(&self, symbol: &str) -> Option<&str> {
         for scope in self.scopes.iter().rev() {
             match scope.get(symbol) {
                 Some(s) => return Some(s),
@@ -84,6 +91,25 @@ impl GeneratorInstance {
         }
 
         None
+    }
+
+    pub fn add_symbol(&mut self, symbol: String, asm: String) {
+        let is_global = self.scopes.len() == 1;
+
+        if is_global && symbol != asm {
+            panic!("Assembly-representation of global symbol must match the symbol itself. (This shouldn't happen)");
+        }
+
+        if is_global {
+            self.globals.push(symbol.clone());
+        }
+
+        // unwrap is allowed cause we should always have at least 1
+        self.scopes.last_mut().unwrap().insert(symbol, asm);
+    }
+
+    pub fn add_extern(&mut self, symbol: String) {
+        self.externs.push(symbol);
     }
 
     pub fn get_instructions(&self) -> String {

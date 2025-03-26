@@ -20,7 +20,7 @@ impl Generator for X86_64Generator {
     fn generate(&self, trans_unit: &TranslationUnit) -> 
         Result<String, CodegenError> {
 
-        let instance = GeneratorInstance::new();
+        let mut instance = GeneratorInstance::new();
 
         for decl in &trans_unit.declarations {
             instance.gen_declaration(decl)?;
