@@ -1,5 +1,5 @@
 
-use crate::{ast::{declaration::DeclarationValue, Declaration}, codegen::error::CodegenError};
+use crate::{ast::{declaration::DeclarationValue, Declaration, Type}, codegen::error::CodegenError};
 
 use super::{instance::GeneratorInstance, instructions::Instr};
 
@@ -11,15 +11,24 @@ impl GeneratorInstance {
 
         match &decl.value {
             None => {
-                let asm_rep = match decl.type_of {
-                    crate::ast::Type::Function(_) => symbol.clone(),
-                    _ => format!("[{}]", symbol),
+                let is_fn = if let Type::Function(_) = decl.type_of {
+                    true
+                } else { false };
+
+                let asm_rep = if is_fn {
+                    symbol.clone()
+                } else {
+                    format!("[{}]", symbol)
                 };
 
                 if decl.external {
                     self.add_extern(symbol.clone(), asm_rep);
                 } else {
                     self.add_symbol(symbol.clone(), asm_rep);
+
+                    if !is_fn {
+                        self.add_bss(symbol, &decl.type_of);
+                    }
                 }
             },
 

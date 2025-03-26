@@ -2,9 +2,9 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use log::trace;
 
-use crate::codegen::error::CodegenError;
+use crate::{ast::Type, codegen::error::CodegenError};
 
-use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}};
+use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, sizes::get_size};
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
@@ -26,7 +26,10 @@ pub struct GeneratorInstance {
     /// The label to jump to to return, if we're in a fn
     pub return_label: Option<u64>,
 
-    /// The actual instructions we're making
+    /// Contents of the BSS section
+    bss: String,
+
+    /// The actual instructions we're making (contents of the text section)
     instructions: String,
 }
 
@@ -56,6 +59,7 @@ impl GeneratorInstance {
             externs: vec![],
             globals: vec![],
             return_label: None,
+            bss: String::new(),
             instructions: String::new(),
         }
     }
@@ -134,22 +138,29 @@ impl GeneratorInstance {
         self.instructions.push_str(&format!("\t{}\n", instr));
     }
 
+    pub fn add_bss(&mut self, symbol: String, type_of: &Type) {
+        let size = get_size(type_of);
+        self.bss.push_str(&format!("{}: resb {}\n", symbol, size));
+    }
+
     pub fn get_instructions(&self) -> String {
-        let mut instructions = String::from("BITS 64\n\n");
+        let mut asm = String::from("BITS 64\n\n");
 
         for e in &self.externs {
-            instructions.push_str(&format!("EXTERN {}\n", e));
+            asm.push_str(&format!("EXTERN {}\n", e));
         }
 
         for g in &self.globals {
-            instructions.push_str(&format!("GLOBAL {}\n", g));
+            asm.push_str(&format!("GLOBAL {}\n", g));
         }
+
+        asm.push_str("\nSECTION .bss\n");
+        asm.push_str(&self.bss);
         
-        instructions.push_str("\nSECTION .text\n");
+        asm.push_str("\nSECTION .text\n");
+        asm.push_str(&self.instructions);
 
-        instructions.push_str(&self.instructions);
-
-        instructions
+        asm
     }
 }
 
