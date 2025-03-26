@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap};
 
 use crate::codegen::error::CodegenError;
 
-use super::registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS};
+use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}};
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
@@ -93,8 +93,19 @@ impl GeneratorInstance {
         None
     }
 
+    pub fn global_scope(&self) -> bool { self.scopes.len() == 1 }
+
+    pub fn enter_scope(&mut self) { self.scopes.push(HashMap::new()); }
+
+    pub fn exit_scope(&mut self) { self.scopes.pop(); }
+
+    pub fn add_fn_symbol(&mut self, symbol: String) {
+        self.add_symbol(symbol.clone(), symbol.clone());
+        self.instructions.push_str(&format!("{}:\n", symbol));
+    }
+
     pub fn add_symbol(&mut self, symbol: String, asm: String) {
-        let is_global = self.scopes.len() == 1;
+        let is_global = self.global_scope();
 
         if is_global && symbol != asm {
             panic!("Assembly-representation of global symbol must match the symbol itself. (This shouldn't happen)");
@@ -110,6 +121,10 @@ impl GeneratorInstance {
 
     pub fn add_extern(&mut self, symbol: String) {
         self.externs.push(symbol);
+    }
+    
+    pub fn add_instr(&mut self, instr: Instr) {
+        self.instructions.push_str(&format!("\t{}\n", instr));
     }
 
     pub fn get_instructions(&self) -> String {
