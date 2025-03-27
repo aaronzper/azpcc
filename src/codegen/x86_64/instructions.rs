@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+#[derive(Clone)]
 pub enum Instr {
     Mov(String, String),
     Movsx(String, String),
@@ -21,6 +22,7 @@ pub enum Instr {
 
     Cmp(String, String),
     Je(u64),
+    Jne(u64),
 
     Cqo,
 
@@ -50,6 +52,7 @@ impl Display for Instr {
 
             Instr::Cmp(a, b) => write!(f, "cmp {}, {}", a, b),
             Instr::Je(a) => write!(f, "je .L{}", a),
+            Instr::Jne(a) => write!(f, "jne .L{}", a),
 
             Instr::Cqo => write!(f, "cqo"),
 

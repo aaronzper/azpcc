@@ -39,7 +39,7 @@ impl GeneratorInstance {
                 let to_branch = self.new_label();
                 let to_end = self.new_label();
                 // TODO: Get size
-                let output = self.alloc_scratch(RegisterSize::DWord)?;
+                let result = self.alloc_scratch(RegisterSize::DWord)?;
 
                 let cmp = Instr::Cmp(condition.reg.to_string(), "0".to_string());
                 let je = Instr::Je(to_branch);
@@ -49,18 +49,83 @@ impl GeneratorInstance {
                 self.add_instr(je);
                 let if_t = self.gen_expr(&expr.true_expr)?;
                 self.add_instr(Instr::Mov(
-                        output.reg.to_string(), 
+                        result.reg.to_string(),
                         if_t.reg.to_string()));
                 self.add_instr(jmp);
                 self.add_label(to_branch);
                 let if_f = self.gen_expr(&expr.false_expr)?;
                 self.add_instr(Instr::Mov(
-                        output.reg.to_string(), 
+                        result.reg.to_string(),
                         if_f.reg.to_string()));
                 self.add_label(to_end);
 
-                Ok(output)
+                Ok(result)
+            },
+
+            Expression::LogicalOr(expr) => {
+                let (a, b) = self.get_binary_scratches(expr)?;
+                // TODO: Get size
+                let result = self.alloc_scratch(a.reg.size)?;
+
+                let to_true = self.new_label();
+                let to_false = self.new_label();
+                let to_end = self.new_label();
+
+                let cmp_a = Instr::Cmp(a.reg.to_string(), "0".to_string());
+                let cmp_b = Instr::Cmp(b.reg.to_string(), "0".to_string());
+                let j_if_a_true = Instr::Jne(to_true);
+                let j_if_b_false = Instr::Je(to_false);
+                let j_to_end = Instr::Jmp(to_end);
+                let ret_true = Instr::Mov(result.reg.to_string(), "1".to_string());
+                let ret_false = Instr::Mov(result.reg.to_string(), "0".to_string());
+
+                self.add_instr(cmp_a);
+                self.add_instr(j_if_a_true);
+                self.add_instr(cmp_b);
+                self.add_instr(j_if_b_false);
+
+                self.add_label(to_true);
+                self.add_instr(ret_true);
+                self.add_instr(j_to_end);
+
+                self.add_label(to_false);
+                self.add_instr(ret_false);
+    
+                self.add_label(to_end);
+
+                Ok(result)
+            },
+
+            Expression::LogicalAnd(expr) => {
+                let (a, b) = self.get_binary_scratches(expr)?;
+                // TODO: Get size
+                let result = self.alloc_scratch(a.reg.size)?;
+
+                let to_false = self.new_label();
+                let to_end = self.new_label();
+
+                let cmp_a = Instr::Cmp(a.reg.to_string(), "0".to_string());
+                let cmp_b = Instr::Cmp(b.reg.to_string(), "0".to_string());
+                let j_if_false = Instr::Je(to_false);
+                let j_to_end = Instr::Jmp(to_end);
+                let ret_true = Instr::Mov(result.reg.to_string(), "1".to_string());
+                let ret_false = Instr::Mov(result.reg.to_string(), "0".to_string());
+
+                self.add_instr(cmp_a);
+                self.add_instr(j_if_false.clone());
+                self.add_instr(cmp_b);
+                self.add_instr(j_if_false);
+                self.add_instr(ret_true);
+                self.add_instr(j_to_end);
+
+                self.add_label(to_false);
+                self.add_instr(ret_false);
+    
+                self.add_label(to_end);
+
+                Ok(result)
             }
+
 
             Expression::Add(args) => {
                 let (a, b) = self.get_binary_scratches(args)?;
