@@ -1,4 +1,4 @@
-use crate::{ast::{expressions::BinaryExpr, Expression}, codegen::{error::CodegenError, x86_64::registers::Register}};
+use crate::{ast::{expressions::BinaryExpr, Expression, Type}, codegen::{error::CodegenError, x86_64::registers::Register}};
 
 use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::{RegisterSize, SizedRegister}};
 
@@ -205,7 +205,7 @@ impl GeneratorInstance {
             Expression::ArrayIndex(args) => {
                 let (arr, ind) = self.get_binary_scratches(args)?;
 
-                /* TODO: Figure out how to get the size (answer: store size in
+                /* TODO: Figure out how to get the size (answer: store type in
                  * exprs)
                 let size = ??
 
@@ -216,7 +216,39 @@ impl GeneratorInstance {
                 todo!()
             }
 
+            Expression::FuncCall(expr) => {
+                let fn_name = match &expr.func {
+                    Expression::Identifier(s) => s,
+                    _ => panic!("Function needs to be identifier"),
+                };
 
+                let (fn_symbol, fn_type) = self.get_symbol(fn_name).expect("Undefined");
+
+                let ret_type = match fn_type {
+                    Type::Function(f) => &f.return_type,
+                    _ => panic!("Function type needs to be function!"),
+                };
+
+                let is_void = match ret_type {
+                    Type::Void => true,
+                    _ => false,
+                };
+
+                // TODO: Args
+
+                let call = Instr::Call(fn_symbol.to_owned());
+                let ret = self.alloc_scratch(get_size(&ret_type))?;
+
+                self.add_instr(call);
+
+                if !is_void {
+                    let rax = SizedRegister { reg: Register::Rax, size: ret.reg.size };
+                    let mov_ret = Instr::Mov(ret.reg.to_string(), rax.to_string());
+                    self.add_instr(mov_ret);
+                } 
+
+                Ok(ret)
+            },
 
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");

@@ -37,7 +37,7 @@ impl GeneratorInstance {
                         Instr::Mov("RBP".to_string(), "RSP".to_string())
                     );
 
-                    // TODO: set up args
+                    // TODO: set up args + save scratches
 
                     for stmt in stmts {
                         self.gen_statement(stmt)?;

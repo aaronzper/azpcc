@@ -55,6 +55,7 @@ pub enum RegisterSize {
     DWord = 4, // 32bit
     Word  = 2, // 16bit
     Byte  = 1, // 8bit
+    Void  = 0, // Used to represent C type void
 }
 
 impl Display for RegisterSize {
@@ -64,6 +65,7 @@ impl Display for RegisterSize {
             Self::DWord => write!(f, "DWORD"),
             Self::Word => write!(f, "WORD"),
             Self::Byte => write!(f, "BYTE"),
+            Self::Void => panic!("Shouldn't use void reg in instruction"),
         }
     }
 }
@@ -99,6 +101,7 @@ impl Display for SizedRegister {
                 RegisterSize::DWord => write!(f, "{}D", core),
                 RegisterSize::Word => write!(f, "{}W", core),
                 RegisterSize::Byte => write!(f, "{}B", core),
+                RegisterSize::Void => panic!("Shouldn't use void reg in instruction"),
             }
         } else if self.reg as u8 >= 4 { // RSI and RDI
             match self.size {
@@ -106,6 +109,7 @@ impl Display for SizedRegister {
                 RegisterSize::DWord => write!(f, "E{}", core),
                 RegisterSize::Word => write!(f, "{}", core),
                 RegisterSize::Byte => write!(f, "{}L", core),
+                RegisterSize::Void => panic!("Shouldn't use void reg in instruction"),
             }
         } else {
             match self.size {
@@ -113,6 +117,7 @@ impl Display for SizedRegister {
                 RegisterSize::DWord => write!(f, "E{}X", core),
                 RegisterSize::Word => write!(f, "{}X", core),
                 RegisterSize::Byte => write!(f, "{}L", core),
+                RegisterSize::Void => panic!("Shouldn't use void reg in instruction"),
             }
         }
     }
