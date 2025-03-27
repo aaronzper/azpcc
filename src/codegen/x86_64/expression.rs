@@ -1,8 +1,15 @@
-use crate::{ast::Expression, codegen::error::CodegenError};
+use crate::{ast::{expressions::BinaryExpr, Expression}, codegen::{error::CodegenError, x86_64::registers::Register}};
 
-use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::RegisterSize};
+use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::{RegisterSize, SizedRegister}};
 
 impl GeneratorInstance {
+    fn get_binary_scratches(&mut self, args: &BinaryExpr) -> 
+        Result<(Scratch, Scratch), CodegenError> {
+        let a = self.gen_expr(&args.first)?;
+        let b = self.gen_expr(&args.second)?;
+
+        Ok((a,b))
+    }
     pub fn gen_expr(&mut self, expr: &Expression) -> 
         Result<Scratch, CodegenError> {
         
@@ -27,11 +34,50 @@ impl GeneratorInstance {
             }
 
             Expression::Add(args) => {
-                let a = self.gen_expr(&args.first)?;
-                let b = self.gen_expr(&args.second)?;
+                let (a, b) = self.get_binary_scratches(args)?;
 
                 let instr = Instr::Add(a.reg.to_string(), b.reg.to_string());
                 self.add_instr(instr);
+
+                Ok(a)
+            },
+
+            Expression::Subtract(args) => {
+                let (a, b) = self.get_binary_scratches(args)?;
+
+                let instr = Instr::Sub(a.reg.to_string(), b.reg.to_string());
+                self.add_instr(instr);
+
+                Ok(a)
+            },
+
+            Expression::Multiply(args) => {
+                let (a, b) = self.get_binary_scratches(args)?;
+
+                let instr = Instr::Imul(a.reg.to_string(), b.reg.to_string());
+                self.add_instr(instr);
+
+                Ok(a)
+            },
+
+            Expression::Divide(args) => {
+                let (a, b) = self.get_binary_scratches(args)?;
+
+                let rax = SizedRegister { reg: Register::Rax, size: a.reg.size }
+                    .to_string();
+
+                let instrs = [
+                    Instr::Push("RDX".to_string()),
+                    Instr::Mov(rax.clone(), a.reg.to_string()),
+                    Instr::Cqo,
+                    Instr::Idiv(b.reg.to_string()),
+                    Instr::Mov(a.reg.to_string(), rax),
+                    Instr::Pop("RDX".to_string()),
+                ];
+
+                for instr in instrs {
+                    self.add_instr(instr);
+                }
 
                 Ok(a)
             },

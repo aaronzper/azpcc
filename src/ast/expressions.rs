@@ -217,8 +217,24 @@ impl Expression {
             Self::Add(x) => x.verify(context),
             Self::Subtract(x) => x.verify(context),
 
-            Self::Multiply(x) => x.verify(context),
-            Self::Divide(x) => x.verify(context),
+            Self::Multiply(x) => { 
+                let t = x.verify(context)?;
+                if !t.is_signed() {
+                    // TODO
+                    Err(CompilerError::SemanticError("Can't multiply unsigned ints"))
+                } else { Ok(t) }
+
+            }
+
+            Self::Divide(x) => { 
+                let t = x.verify(context)?;
+                if !t.is_signed() {
+                    // TODO
+                    Err(CompilerError::SemanticError("Can't divide unsigned ints"))
+                } else { Ok(t) }
+
+            }
+
             Self::Modulo(x) => x.verify(context),
 
             Self::Cast(x) => x.verify(context),

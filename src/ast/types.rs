@@ -32,6 +32,13 @@ impl Type {
             _ => false
         }
     }
+
+    pub fn is_signed(&self) -> bool {
+        match self {
+            Self::Int8 | Self::Int16 | Self::Int32 | Self::Int64 => true,
+            _ => false
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq)]
