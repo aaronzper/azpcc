@@ -51,10 +51,10 @@ impl TryFrom<u8> for Register {
 /// Represents a potential register size in x86
 #[derive(Copy, Clone)]
 pub enum RegisterSize {
-    QWord,// 64bit
-    DWord,// 32bit
-    Word, // 16bit
-    Byte, // 8bit
+    QWord = 8, // 64bit
+    DWord = 4, // 32bit
+    Word  = 2, // 16bit
+    Byte  = 1, // 8bit
 }
 
 impl Display for RegisterSize {

@@ -107,6 +107,23 @@ impl GeneratorInstance {
                 Ok(a)
             },
 
+            Expression::Cast(cast) => {
+                let mut reg = self.gen_expr(&cast.expr)?;
+
+                let old = reg.reg.to_string();
+                let old_sz = reg.reg.size as u8;
+                reg.reg.size = get_size(&cast.cast_to);
+                let new = reg.reg.to_string();
+                let new_sz = reg.reg.size as u8;
+
+                if new_sz > old_sz {
+                    let instr = Instr::Movsx(new, old);
+                    self.add_instr(instr);
+                }
+
+                Ok(reg)
+            }
+
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
                 let scratch = self.alloc_scratch(get_size(type_of))?;

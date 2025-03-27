@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 pub enum Instr {
     Mov(String, String),
+    Movsx(String, String),
 
     Add(String, String),
     Sub(String, String),
@@ -22,6 +23,7 @@ impl Display for Instr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Instr::Mov(a, b) => write!(f, "mov {}, {}", a, b),
+            Instr::Movsx(a, b) => write!(f, "movsx {}, {}", a, b),
 
             Instr::Add(a, b) => write!(f, "add {}, {}", a, b),
             Instr::Sub(a, b) => write!(f, "sub {}, {}", a, b),
