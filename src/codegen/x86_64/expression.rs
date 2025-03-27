@@ -1,6 +1,6 @@
 use crate::{ast::{expressions::BinaryExpr, Expression, Type}, codegen::{error::CodegenError, x86_64::registers::Register}};
 
-use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::{RegisterSize, SizedRegister}};
+use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::{RegisterSize, SizedRegister, ARG_REGS}};
 
 impl GeneratorInstance {
     fn get_binary_scratches(&mut self, args: &BinaryExpr) -> 
@@ -222,10 +222,11 @@ impl GeneratorInstance {
                     _ => panic!("Function needs to be identifier"),
                 };
 
-                let (fn_symbol, fn_type) = self.get_symbol(fn_name).expect("Undefined");
+                let (fn_symbol, fn_type) = self.get_symbol(fn_name)
+                    .expect("Undefined").clone();
 
                 let ret_type = match fn_type {
-                    Type::Function(f) => &f.return_type,
+                    Type::Function(f) => f.return_type,
                     _ => panic!("Function type needs to be function!"),
                 };
 
@@ -234,13 +235,50 @@ impl GeneratorInstance {
                     _ => false,
                 };
 
-                // TODO: Args
 
-                let call = Instr::Call(fn_symbol.to_owned());
+                for (i, arg) in expr.args.iter().enumerate() {
+                    if i >= 6 { //Reached end of register args
+                        break;
+                    }
+
+                    let arg_scratch = self.gen_expr(arg)?;
+
+                    let arg_reg = SizedRegister {
+                        reg: ARG_REGS[i],
+                        size: arg_scratch.reg.size
+                    };
+
+                    let mov = Instr::Mov(
+                        arg_reg.to_string(), 
+                        arg_scratch.reg.to_string());
+
+                    self.add_instr(mov);
+                }
+
+                // Push stack args on
+                let num_args = expr.args.len();
+                if num_args > 6 {
+                    for i in (6..num_args).rev() { // Go backwards per ABI
+                        let mut arg_scratch = self.gen_expr(&expr.args[i])?;
+
+                        // Stack pushes need to be QWords (idk why)
+                        arg_scratch.reg.size = RegisterSize::QWord;
+
+                        self.add_instr(Instr::Push(arg_scratch.reg.to_string()));
+                    }
+                }
+
+                self.add_instr(Instr::Call(fn_symbol));
+
+                let bytes_to_pop = (num_args - 6) * 8;
+                if bytes_to_pop > 0 {
+                    let instr = Instr::Add(
+                        "RSP".to_string(),
+                        bytes_to_pop.to_string());
+                    self.add_instr(instr);
+                }
+
                 let ret = self.alloc_scratch(get_size(&ret_type))?;
-
-                self.add_instr(call);
-
                 if !is_void {
                     let rax = SizedRegister { reg: Register::Rax, size: ret.reg.size };
                     let mov_ret = Instr::Mov(ret.reg.to_string(), rax.to_string());
