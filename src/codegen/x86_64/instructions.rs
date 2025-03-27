@@ -11,6 +11,8 @@ pub enum Instr {
     Idiv(String),
     Neg(String),
 
+    Not(String),
+
     Push(String),
     Pop(String),
 
@@ -33,6 +35,8 @@ impl Display for Instr {
             Instr::Imul(a, b) => write!(f, "imul {}, {}", a, b),
             Instr::Idiv(a) => write!(f, "idiv {}", a),
             Instr::Neg(a) => write!(f, "neg {}", a),
+
+            Instr::Not(a) => write!(f, "not {}", a),
 
             Instr::Push(a) => write!(f, "push {}", a),
             Instr::Pop(a) => write!(f, "pop {}", a),

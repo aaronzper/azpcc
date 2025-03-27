@@ -164,6 +164,15 @@ impl GeneratorInstance {
                 Ok(a)
             }
 
+            Expression::BitwiseNot(expr) => {
+                let a = self.gen_expr(&expr.expr)?;
+
+                let instr = Instr::Not(a.reg.to_string());
+                self.add_instr(instr);
+
+                Ok(a)
+            }
+
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
                 let scratch = self.alloc_scratch(get_size(type_of))?;
