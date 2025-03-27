@@ -126,6 +126,32 @@ impl GeneratorInstance {
                 Ok(result)
             }
 
+            Expression::BitwiseOr(args) => {
+                let (a, b) = self.get_binary_scratches(args)?;
+
+                let instr = Instr::Or(a.reg.to_string(), b.reg.to_string());
+                self.add_instr(instr);
+
+                Ok(a)
+            },
+
+            Expression::BitwiseXor(args) => {
+                let (a, b) = self.get_binary_scratches(args)?;
+
+                let instr = Instr::Xor(a.reg.to_string(), b.reg.to_string());
+                self.add_instr(instr);
+
+                Ok(a)
+            },
+
+            Expression::BitwiseAnd(args) => {
+                let (a, b) = self.get_binary_scratches(args)?;
+
+                let instr = Instr::And(a.reg.to_string(), b.reg.to_string());
+                self.add_instr(instr);
+
+                Ok(a)
+            },
 
             Expression::Add(args) => {
                 let (a, b) = self.get_binary_scratches(args)?;

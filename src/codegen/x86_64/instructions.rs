@@ -13,6 +13,9 @@ pub enum Instr {
     Neg(String),
 
     Not(String),
+    Or(String, String),
+    Xor(String, String),
+    And(String, String),
 
     Push(String),
     Pop(String),
@@ -43,6 +46,9 @@ impl Display for Instr {
             Instr::Neg(a) => write!(f, "neg {}", a),
 
             Instr::Not(a) => write!(f, "not {}", a),
+            Instr::Or(a, b) => write!(f, "or {}, {}", a, b),
+            Instr::Xor(a, b) => write!(f, "xor {}, {}", a, b),
+            Instr::And(a, b) => write!(f, "and {}, {}", a, b),
 
             Instr::Push(a) => write!(f, "push {}", a),
             Instr::Pop(a) => write!(f, "pop {}", a),
