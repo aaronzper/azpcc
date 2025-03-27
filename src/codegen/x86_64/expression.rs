@@ -33,6 +33,35 @@ impl GeneratorInstance {
                 }
             }
 
+            Expression::Ternary(expr) => {
+                let condition = self.gen_expr(&expr.condition)?;
+
+                let to_branch = self.new_label();
+                let to_end = self.new_label();
+                // TODO: Get size
+                let output = self.alloc_scratch(RegisterSize::DWord)?;
+
+                let cmp = Instr::Cmp(condition.reg.to_string(), "0".to_string());
+                let je = Instr::Je(to_branch);
+                let jmp = Instr::Jmp(to_end);
+
+                self.add_instr(cmp);
+                self.add_instr(je);
+                let if_t = self.gen_expr(&expr.true_expr)?;
+                self.add_instr(Instr::Mov(
+                        output.reg.to_string(), 
+                        if_t.reg.to_string()));
+                self.add_instr(jmp);
+                self.add_label(to_branch);
+                let if_f = self.gen_expr(&expr.false_expr)?;
+                self.add_instr(Instr::Mov(
+                        output.reg.to_string(), 
+                        if_f.reg.to_string()));
+                self.add_label(to_end);
+
+                Ok(output)
+            }
+
             Expression::Add(args) => {
                 let (a, b) = self.get_binary_scratches(args)?;
 
@@ -301,6 +330,7 @@ impl GeneratorInstance {
             }
 
             Expression::IntLiteral(x) => {
+                // TODO: Use correct size
                 let scratch = self.alloc_scratch(RegisterSize::DWord)?;
                 let instr = Instr::Mov(scratch.reg.to_string(), x.to_string());
                 self.add_instr(instr);
