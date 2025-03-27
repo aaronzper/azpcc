@@ -202,6 +202,22 @@ impl GeneratorInstance {
             // TODO
             Expression::SizeOf(_) => todo!(),
 
+            Expression::ArrayIndex(args) => {
+                let (arr, ind) = self.get_binary_scratches(args)?;
+
+                /* TODO: Figure out how to get the size (answer: store size in
+                 * exprs)
+                let size = ??
+
+                let instr = Instr::Mov(
+                    arr.reg.to_string()
+                    format!("[{} + {}*{}]", arr, ind, */
+
+                todo!()
+            }
+
+
+
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
                 let scratch = self.alloc_scratch(get_size(type_of))?;
