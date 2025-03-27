@@ -199,6 +199,9 @@ impl GeneratorInstance {
                 Ok(a)
             }
 
+            // TODO
+            Expression::SizeOf(_) => todo!(),
+
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
                 let scratch = self.alloc_scratch(get_size(type_of))?;
@@ -213,6 +216,13 @@ impl GeneratorInstance {
 
             Expression::IntLiteral(x) => {
                 let scratch = self.alloc_scratch(RegisterSize::DWord)?;
+                let instr = Instr::Mov(scratch.reg.to_string(), x.to_string());
+                self.add_instr(instr);
+                Ok(scratch)
+            }
+
+            Expression::CharLiteral(x) => {
+                let scratch = self.alloc_scratch(RegisterSize::Byte)?;
                 let instr = Instr::Mov(scratch.reg.to_string(), x.to_string());
                 self.add_instr(instr);
                 Ok(scratch)
