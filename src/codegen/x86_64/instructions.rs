@@ -3,6 +3,7 @@ use std::fmt::Display;
 pub enum Instr {
     Mov(String, String),
     Movsx(String, String),
+    Lea(String, String),
 
     Add(String, String),
     Sub(String, String),
@@ -24,6 +25,7 @@ impl Display for Instr {
         match self {
             Instr::Mov(a, b) => write!(f, "mov {}, {}", a, b),
             Instr::Movsx(a, b) => write!(f, "movsx {}, {}", a, b),
+            Instr::Lea(a, b) => write!(f, "lea {}, {}", a, b),
 
             Instr::Add(a, b) => write!(f, "add {}, {}", a, b),
             Instr::Sub(a, b) => write!(f, "sub {}, {}", a, b),

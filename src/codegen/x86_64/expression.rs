@@ -124,6 +124,28 @@ impl GeneratorInstance {
                 Ok(reg)
             }
 
+            // TODO: Pre/Post Inc/Dec
+            
+            Expression::AddressOf(expr) => {
+                match &expr.expr {
+                    Expression::Identifier(x) => {
+                        let reg = self.alloc_scratch(RegisterSize::QWord)?;
+                        let (x_asm, _) = self.get_symbol(&x).expect("Undefined");
+                        let instr = Instr::Lea(
+                            reg.reg.to_string(), 
+                            x_asm.to_string());
+                        self.add_instr(instr);
+                        Ok(reg)
+                    },
+
+                    // TODO
+                    Expression::Dereference(_) | Expression::ArrayIndex(_) => 
+                        todo!(),
+
+                    _ => panic!("Address arg must be lvalue"),
+                }
+            }
+
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
                 let scratch = self.alloc_scratch(get_size(type_of))?;
