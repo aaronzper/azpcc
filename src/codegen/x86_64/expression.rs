@@ -153,6 +153,9 @@ impl GeneratorInstance {
                 Ok(a)
             },
 
+            Expression::ShiftLeft(_) | Expression::ShiftRight(_) =>
+                todo!("Bitshifting"),
+
             Expression::Add(args) => {
                 let (a, b) = self.get_binary_scratches(args)?;
 
@@ -320,7 +323,7 @@ impl GeneratorInstance {
             }
 
             // TODO
-            Expression::SizeOf(_) => todo!(),
+            Expression::SizeOf(_) => todo!("Sizeof"),
 
             Expression::ArrayIndex(args) => {
                 let (arr, ind) = self.get_binary_scratches(args)?;
