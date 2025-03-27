@@ -173,6 +173,32 @@ impl GeneratorInstance {
                 Ok(a)
             }
 
+            Expression::LogicalNot(expr) => {
+                let a = self.gen_expr(&expr.expr)?;
+
+                let to_branch = self.new_label();
+                let to_end = self.new_label();
+
+                let cmp = Instr::Cmp(a.reg.to_string(), "0".to_string());
+                let je = Instr::Je(to_branch);
+                let mov_0 = Instr::Mov(a.reg.to_string(), "0".to_string());
+                let jmp = Instr::Jmp(to_end);
+                let mov_1 = Instr::Mov(a.reg.to_string(), "1".to_string());
+
+                self.add_instr(cmp);
+                self.add_instr(je);
+
+                self.add_instr(mov_0);
+                self.add_instr(jmp);
+
+                self.add_label(to_branch);
+                self.add_instr(mov_1);
+
+                self.add_label(to_end);
+
+                Ok(a)
+            }
+
             Expression::Identifier(id) => {
                 let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
                 let scratch = self.alloc_scratch(get_size(type_of))?;

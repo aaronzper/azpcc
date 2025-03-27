@@ -16,7 +16,9 @@ pub enum Instr {
     Push(String),
     Pop(String),
 
+    Cmp(String, String),
     Jmp(u64),
+    Je(u64),
 
     Cqo,
 
@@ -41,7 +43,9 @@ impl Display for Instr {
             Instr::Push(a) => write!(f, "push {}", a),
             Instr::Pop(a) => write!(f, "pop {}", a),
 
+            Instr::Cmp(a, b) => write!(f, "cmp {}, {}", a, b),
             Instr::Jmp(a) => write!(f, "jmp .L{}", a),
+            Instr::Je(a) => write!(f, "je .L{}", a),
 
             Instr::Cqo => write!(f, "cqo"),
 
