@@ -186,6 +186,8 @@ Expression: Expression = {
 TypeSpecifier: Type = {
   <TypeSpecifier> "*" => Type::Pointer(Box::new(<>)),
 
+  "void" "*" => Type::Pointer(Box::new(Type::Void)),
+
   "signed" <InnerTypeSpecifier> =>? match <> {
     Type::Uint8 => Ok(Type::Int8),
     Type::Uint16 => Ok(Type::Int16),
