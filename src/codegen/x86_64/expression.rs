@@ -303,7 +303,9 @@ impl GeneratorInstance {
                 Ok(reg)
             }
 
-            // TODO: Pre/Post Inc/Dec
+            // TODO
+            Expression::PreInc(_) | Expression::PreDec(_) |
+                Expression::PostInc(_) | Expression::PostDec(_) => todo!(),
             
             Expression::AddressOf(expr) => {
                 match &expr.expr {
@@ -494,7 +496,8 @@ impl GeneratorInstance {
                 Ok(scratch)
             }
 
-            _ => todo!()
+            // TODO
+            Expression::StringLiteral(_) => todo!()
         }
     }
 }
