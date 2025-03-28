@@ -1,7 +1,7 @@
 
 use crate::{ast::{declaration::DeclarationValue, Declaration, Type}, codegen::error::CodegenError};
 
-use super::{instance::GeneratorInstance, instructions::Instr};
+use super::{helpers::get_size, instance::GeneratorInstance, instructions::Instr, registers::{SizedRegister, ARG_REGS}};
 
 impl GeneratorInstance {
     pub fn gen_declaration(&mut self, decl: &Declaration) -> 
@@ -37,7 +37,25 @@ impl GeneratorInstance {
                         Instr::Mov("RBP".to_string(), "RSP".to_string())
                     );
 
-                    // TODO: set up args + save scratches
+                    let args = if let Type::Function(ftype) = &decl.type_of {
+                        &ftype.args
+                    } else {
+                        panic!("Function decl type must be func");
+                    };
+
+                    for (i, (arg_n, arg_t)) in args.iter().enumerate() {
+                        if i >= 6 {
+                            todo!("Functions defs with more that 6 args");
+                        }
+
+                        let symbol = arg_n.clone();
+                        let reg = SizedRegister {
+                            reg: ARG_REGS[i],
+                            size: get_size(arg_t),
+                        }.to_string();
+
+                        self.add_symbol_with_asm(symbol, arg_t.clone(), reg);
+                    }
 
                     for stmt in stmts {
                         self.gen_statement(stmt)?;

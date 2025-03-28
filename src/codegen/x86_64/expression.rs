@@ -451,8 +451,8 @@ impl GeneratorInstance {
 
                 self.add_instr(Instr::Call(fn_symbol));
 
-                let bytes_to_pop = (num_args - 6) * 8;
-                if bytes_to_pop > 0 {
+                if num_args > 6 {
+                    let bytes_to_pop = (num_args - 6) * 8;
                     let instr = Instr::Add(
                         "RSP".to_string(),
                         bytes_to_pop.to_string());

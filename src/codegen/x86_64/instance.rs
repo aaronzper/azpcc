@@ -115,7 +115,10 @@ impl GeneratorInstance {
 
     pub fn add_symbol(&mut self, symbol: String, type_of: Type) {
         let asm = get_asm(&symbol, &type_of);
+        self.add_symbol_with_asm(symbol, type_of, asm);
+    }
 
+    pub fn add_symbol_with_asm(&mut self, symbol: String, type_of: Type, asm: String) {
         if self.global_scope() {
             self.globals.push(symbol.clone());
         }
