@@ -64,8 +64,7 @@ impl GeneratorInstance {
 
             Expression::LogicalOr(expr) => {
                 let (a, b) = self.get_binary_scratches(expr)?;
-                // TODO: Get size
-                let result = self.alloc_scratch(a.reg.size)?;
+                let result = self.alloc_scratch(RegisterSize::Byte)?;
 
                 let to_true = self.new_label();
                 let to_false = self.new_label();
@@ -98,8 +97,7 @@ impl GeneratorInstance {
 
             Expression::LogicalAnd(expr) => {
                 let (a, b) = self.get_binary_scratches(expr)?;
-                // TODO: Get size
-                let result = self.alloc_scratch(a.reg.size)?;
+                let result = self.alloc_scratch(RegisterSize::Byte)?;
 
                 let to_false = self.new_label();
                 let to_end = self.new_label();
@@ -151,6 +149,60 @@ impl GeneratorInstance {
                 self.add_instr(instr);
 
                 Ok(a)
+            },
+
+            Expression::Equality(expr) => {
+                let (a, b) = self.get_binary_scratches(expr)?;
+                let result = self.alloc_scratch(RegisterSize::Byte)?;
+
+                let to_branch = self.new_label();
+                let to_end = self.new_label();
+
+                let cmp = Instr::Cmp(a.reg.to_string(), b.reg.to_string());
+                let je = Instr::Je(to_branch);
+                let mov_0 = Instr::Mov(result.reg.to_string(), "0".to_string());
+                let jmp = Instr::Jmp(to_end);
+                let mov_1 = Instr::Mov(result.reg.to_string(), "1".to_string());
+
+                self.add_instr(cmp);
+                self.add_instr(je);
+
+                self.add_instr(mov_0);
+                self.add_instr(jmp);
+
+                self.add_label(to_branch);
+                self.add_instr(mov_1);
+
+                self.add_label(to_end);
+
+                Ok(result)
+            },
+
+            Expression::Inequality(expr) => {
+                let (a, b) = self.get_binary_scratches(expr)?;
+                let result = self.alloc_scratch(RegisterSize::Byte)?;
+
+                let to_branch = self.new_label();
+                let to_end = self.new_label();
+
+                let cmp = Instr::Cmp(a.reg.to_string(), b.reg.to_string());
+                let jne = Instr::Jne(to_branch);
+                let mov_0 = Instr::Mov(result.reg.to_string(), "0".to_string());
+                let jmp = Instr::Jmp(to_end);
+                let mov_1 = Instr::Mov(result.reg.to_string(), "1".to_string());
+
+                self.add_instr(cmp);
+                self.add_instr(jne);
+
+                self.add_instr(mov_0);
+                self.add_instr(jmp);
+
+                self.add_label(to_branch);
+                self.add_instr(mov_1);
+
+                self.add_label(to_end);
+
+                Ok(result)
             },
 
             Expression::ShiftLeft(_) | Expression::ShiftRight(_) =>
