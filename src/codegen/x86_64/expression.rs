@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::{ast::{expressions::BinaryExpr, Expression, Type}, codegen::{error::CodegenError, x86_64::registers::Register}};
 
 use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::{RegisterSize, SizedRegister, ARG_REGS}};
@@ -56,8 +58,8 @@ impl GeneratorInstance {
         match expr {
             Expression::Assignment(x) => {
                 if let Expression::Identifier(id) = &x.first {
-                    let (symbol, _) = self.get_symbol(&id)
-                        .expect("Undefined").to_owned();
+                    let symbol = self.get_symbol(&id)
+                        .expect("Undefined").asm_rep.to_owned();
 
                     let scratch = self.gen_expr(&x.second)?;
 
@@ -312,7 +314,7 @@ impl GeneratorInstance {
                 match &expr.expr {
                     Expression::Identifier(x) => {
                         let reg = self.alloc_scratch(RegisterSize::QWord)?;
-                        let (x_asm, _) = self.get_symbol(&x).expect("Undefined");
+                        let x_asm = &self.get_symbol(&x).expect("Undefined").asm_rep;
                         let instr = Instr::Lea(
                             reg.reg.to_string(), 
                             x_asm.to_string());
@@ -404,10 +406,10 @@ impl GeneratorInstance {
                     _ => panic!("Function needs to be identifier"),
                 };
 
-                let (fn_symbol, fn_type) = self.get_symbol(fn_name)
+                let var = self.get_symbol(fn_name)
                     .expect("Undefined").clone();
 
-                let ret_type = match fn_type {
+                let ret_type = match var.type_of {
                     Type::Function(f) => f.return_type,
                     _ => panic!("Function type needs to be function!"),
                 };
@@ -417,7 +419,8 @@ impl GeneratorInstance {
                     _ => false,
                 };
 
-
+                // Set reg args
+                let mut pop_instrs = VecDeque::new();
                 for (i, arg) in expr.args.iter().enumerate() {
                     if i >= 6 { //Reached end of register args
                         break;
@@ -429,6 +432,15 @@ impl GeneratorInstance {
                         reg: ARG_REGS[i],
                         size: arg_scratch.reg.size
                     };
+
+                    // Save any argument registers currently in use
+                    if self.arg_regs.contains(&arg_reg.reg) {
+                        let mut to_push = arg_reg.clone();
+                        to_push.size = RegisterSize::QWord;
+
+                        self.add_instr(Instr::Push(to_push.to_string()));
+                        pop_instrs.push_front(Instr::Pop(to_push.to_string()));
+                    }
 
                     let mov = Instr::Mov(
                         arg_reg.to_string(), 
@@ -450,13 +462,19 @@ impl GeneratorInstance {
                     }
                 }
 
-                self.add_instr(Instr::Call(fn_symbol));
+                self.add_instr(Instr::Call(var.asm_rep));
 
+                // Pop off stack args
                 if num_args > 6 {
                     let bytes_to_pop = (num_args - 6) * 8;
                     let instr = Instr::Add(
                         "RSP".to_string(),
                         bytes_to_pop.to_string());
+                    self.add_instr(instr);
+                }
+
+                // Pop off saved reg args
+                for instr in pop_instrs {
                     self.add_instr(instr);
                 }
 
@@ -471,12 +489,12 @@ impl GeneratorInstance {
             },
 
             Expression::Identifier(id) => {
-                let (sym, type_of) = self.get_symbol(&id).expect("Undefined");
-                let scratch = self.alloc_scratch(get_size(type_of))?;
+                let var = self.get_symbol(&id).expect("Undefined");
+                let scratch = self.alloc_scratch(get_size(&var.type_of))?;
 
                 let instr = Instr::Mov(
                     scratch.reg.to_string(),
-                    sym.to_owned());
+                    var.asm_rep.to_owned());
                 self.add_instr(instr);
 
                 Ok(scratch)

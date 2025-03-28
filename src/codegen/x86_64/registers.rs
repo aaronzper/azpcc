@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 
 /// Represents an unsized, x86-64 general-purpose register
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, Debug)]
 pub enum Register {
     Rax = 0,
     Rbx = 1,
@@ -69,6 +69,7 @@ impl Display for RegisterSize {
     }
 }
 
+#[derive(Clone)]
 pub struct SizedRegister {
     pub reg: Register,
     pub size: RegisterSize,

@@ -1,10 +1,16 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
 
 use log::trace;
 
 use crate::{ast::Type, codegen::{error::CodegenError, x86_64::helpers::get_asm}};
 
 use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, helpers::get_bytes};
+
+#[derive(Debug, Clone)]
+pub struct ScopeVariable {
+    pub asm_rep: String,
+    pub type_of: Type,
+}
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
@@ -15,16 +21,19 @@ pub struct GeneratorInstance {
 
     /// Stack of scopes, maps symbol name to asm code for it. 0 is global, 1 is
     /// function scope, 2 is some scope inside that, etc
-    scopes: Vec<HashMap<String, (String, Type)>>,
+    scopes: Vec<HashMap<String, ScopeVariable>>,
+
+    /// Tracks which argument registers are in use by the current fn
+    pub arg_regs: HashSet<Register>,
+
+    /// The label to jump to to return, if we're in a fn
+    pub return_label: Option<u64>,
 
     /// External symbols we'll link to later
     externs: Vec<String>,
 
     /// Global symbols that are linkable by others
     globals: Vec<String>,
-
-    /// The label to jump to to return, if we're in a fn
-    pub return_label: Option<u64>,
 
     /// Contents of the data section
     data: String,
@@ -44,7 +53,6 @@ impl GeneratorInstance {
             let reg = i.try_into().unwrap();
 
             // Don't use non-callee-saved regs for now (args, Rax, R10, R11)
-            // TODO: Change
             let used = ARG_REGS.contains(&reg) 
                 || reg == Register::Rax 
                 || reg == Register::R10 
@@ -59,9 +67,10 @@ impl GeneratorInstance {
             scratches: Rc::new(RefCell::new(scratches)),
             label_counter: 0,
             scopes: vec![HashMap::new()],
+            arg_regs: HashSet::new(),
+            return_label: None,
             externs: vec![],
             globals: vec![],
-            return_label: None,
             data: String::new(),
             bss: String::new(),
             instructions: String::new(),
@@ -100,7 +109,7 @@ impl GeneratorInstance {
         self.instructions.push_str(&format!("{}:\n", label));
     }
 
-    pub fn get_symbol(&self, symbol: &str) -> Option<&(String, Type)> {
+    pub fn get_symbol(&self, symbol: &str) -> Option<&ScopeVariable> {
         for scope in self.scopes.iter().rev() {
             match scope.get(symbol) {
                 Some(s) => return Some(s),
@@ -121,19 +130,19 @@ impl GeneratorInstance {
     }
 
     pub fn add_symbol(&mut self, symbol: String, type_of: Type) {
-        let asm = get_asm(&symbol, &type_of);
-        self.add_symbol_with_asm(symbol, type_of, asm);
+        let asm_rep = get_asm(&symbol, &type_of);
+        self.add_symbol_with_asm(symbol, ScopeVariable { asm_rep, type_of });
     }
 
-    pub fn add_symbol_with_asm(&mut self, symbol: String, type_of: Type, asm: String) {
+    pub fn add_symbol_with_asm(&mut self, symbol: String, var: ScopeVariable) {
         if self.global_scope() {
             self.globals.push(symbol.clone());
         }
 
-        trace!("Adding symbol {} as {}", symbol, asm);
+        trace!("Adding symbol {} as {:?}", symbol, var);
 
         // unwrap is allowed cause we should always have at least 1
-        self.scopes.last_mut().unwrap().insert(symbol, (asm, type_of));
+        self.scopes.last_mut().unwrap().insert(symbol, var);
     }
 
     pub fn add_extern(&mut self, symbol: String, type_of: Type) {
@@ -141,8 +150,10 @@ impl GeneratorInstance {
 
         self.externs.push(symbol.clone());
 
-        let asm = get_asm(&symbol, &type_of);
-        self.scopes.last_mut().unwrap().insert(symbol, (asm, type_of));
+        let asm_rep = get_asm(&symbol, &type_of);
+        self.scopes.last_mut().unwrap().insert(symbol, ScopeVariable {
+            asm_rep, type_of,
+        });
     }
     
     pub fn add_instr(&mut self, instr: Instr) {

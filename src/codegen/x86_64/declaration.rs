@@ -1,7 +1,7 @@
 
 use crate::{ast::{declaration::DeclarationValue, Declaration, Expression, Type}, codegen::error::CodegenError};
 
-use super::{helpers::get_size, instance::GeneratorInstance, instructions::Instr, registers::{SizedRegister, ARG_REGS}};
+use super::{helpers::get_size, instance::{GeneratorInstance, ScopeVariable}, instructions::Instr, registers::{SizedRegister, ARG_REGS}};
 
 impl GeneratorInstance {
     pub fn gen_declaration(&mut self, decl: &Declaration) -> 
@@ -47,18 +47,25 @@ impl GeneratorInstance {
                         let symbol = arg_n.clone();
                         let size = get_size(arg_t);
 
-                        let asm = if i < 6 {
-                            SizedRegister {
+                        let asm_rep = if i < 6 {
+                            let reg = SizedRegister {
                                 reg: ARG_REGS[i],
                                 size,
-                            }.to_string()
+                            };
+                            self.arg_regs.insert(reg.reg);
+                            reg.to_string()
                         } else {
                             // Arg 7+ starts at RBP+16
                             let rbp_offset = 16 + ((i-6) * 8);
                             format!("{} [RBP + {}]", size, rbp_offset)
                         };
 
-                        self.add_symbol_with_asm(symbol, arg_t.clone(), asm);
+                        let var = ScopeVariable {
+                            asm_rep,
+                            type_of: arg_t.to_owned(),
+                        };
+
+                        self.add_symbol_with_asm(symbol, var);
                     }
 
                     for stmt in stmts {
@@ -73,6 +80,7 @@ impl GeneratorInstance {
                     self.add_instr(Instr::Ret);
 
                     self.return_label = None;
+                    self.arg_regs.clear();
                     self.exit_scope();
                 },
 
