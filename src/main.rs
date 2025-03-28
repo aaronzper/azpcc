@@ -1,5 +1,4 @@
-use std::path::{Path, PathBuf};
-
+use std::path::PathBuf;
 use ast::Context;
 use clap::{Parser, ValueEnum};
 use codegen::{get_generator, AssemblerOptions};
@@ -90,6 +89,10 @@ fn entry() -> Result<(), CompilerError> {
 
     debug!("Starting compiler withs args {:?}", args);
 
+    if args.output.is_some() && args.compile_only && args.files.len() > 1 {
+        return Err(CompilerError::InvalidOption("Cannot specify -o when generating multiple output files (e.g. with -c)"));
+    }
+
     let files_preproccessed = args.files.iter().enumerate().map(|(i, ref s)| {
         info!("Preprocessing {}", args.files[i].display());
         preprocess(s)
@@ -141,18 +144,20 @@ fn entry() -> Result<(), CompilerError> {
         return Ok(());
     }
 
-    let asm_collected: Result<Box<[String]>, CompilerError> =
-        assembly.collect();
+    let file_asm_pairs: Result<Box<[(PathBuf, String)]>, CompilerError> = 
+        args.files.iter().zip(assembly).map(|(p, a)| {
+            match a {
+                Ok(x) => Ok((p.clone(), x)),
+                Err(e) => Err(e),
+            }
+        }).collect();
 
     let asm_options = AssemblerOptions {
         link: !args.compile_only,
-        output: match &args.output {
-            Some(p) => p,
-            None => Path::new("a.out"),
-        }
+        output: args.output.as_ref(),
     };
 
-    generator.assemble(&asm_collected?, &asm_options)?;
+    generator.assemble(&file_asm_pairs?, &asm_options)?;
 
     Ok(())
 }

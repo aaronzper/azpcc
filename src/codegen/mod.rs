@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::PathBuf;
 
 use error::CodegenError;
 use target_lexicon::Architecture;
@@ -14,16 +14,25 @@ pub struct AssemblerOptions<'a> {
     /// Link to final executable - false corresponds to -c flag
     pub link: bool,
 
-    /// Path to output file
-    pub output: &'a Path, 
+    /// Path to output file (otherwise default, e.g. a.out)
+    pub output: Option<&'a PathBuf>,
 }
 
 pub trait Generator {
+    /// Generates assembly code from the given translation unit
     fn generate(&self, trans_unit: &TranslationUnit) -> 
         Result<String, CodegenError>;
 
-    fn assemble(&self, assembly: &[String], options: &AssemblerOptions) ->
-        Result<(), CodegenError>;
+    /// Takes a list of path/generated-asm pairs and assembles them. 
+    ///
+    /// The paths are the original files, paired with their resultant assembly.
+    ///
+    /// Options also included to tell the assembler whether to link and where to
+    /// spit out the output.
+    fn assemble(&self, 
+        input_pairs: &[(PathBuf, String)],
+        options: &AssemblerOptions
+    ) -> Result<(), CompilerError>;
 }
 
 pub fn get_generator(arch: &Architecture) -> 

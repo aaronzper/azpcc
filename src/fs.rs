@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read, path::Path};
+use std::{fs::File, io::Read, path::{Path, PathBuf}};
 
 use log::trace;
 
@@ -10,6 +10,17 @@ pub fn read_file(path: &Path) -> Result<String, CompilerError> {
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
     Ok(contents)
+}
+
+pub fn replace_extension(mut path: PathBuf, extension: &str) -> PathBuf {
+    // If there's not a file name we woulda found out by now lol
+    let mut filename = path.file_stem().unwrap().to_os_string();
+    filename.push(format!(".{}", extension));
+
+    path.pop();
+    path.push(filename);
+
+    path
 }
 
 #[cfg(test)]

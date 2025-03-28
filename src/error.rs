@@ -6,6 +6,9 @@ use crate::codegen::error::CodegenError;
 
 #[derive(Error, Debug)]
 pub enum CompilerError {
+    #[error("Invalid Option: {0}")]
+    InvalidOption(&'static str),
+
     #[error("File Error: {0}")]
     FileError(#[from] io::Error),
 
