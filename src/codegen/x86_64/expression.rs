@@ -209,6 +209,7 @@ impl GeneratorInstance {
             Expression::GECompare(expr) => 
                 self.gen_comparison(expr, ComparisonType::Ge),
 
+            // TODO bitshifts
             Expression::ShiftLeft(_) | Expression::ShiftRight(_) =>
                 todo!("Bitshifting"),
 
@@ -303,7 +304,7 @@ impl GeneratorInstance {
                 Ok(reg)
             }
 
-            // TODO
+            // TODO Incrementors
             Expression::PreInc(_) | Expression::PreDec(_) |
                 Expression::PostInc(_) | Expression::PostDec(_) => todo!(),
             
@@ -319,7 +320,7 @@ impl GeneratorInstance {
                         Ok(reg)
                     },
 
-                    // TODO
+                    // TODO Other pointery types
                     Expression::Dereference(_) | Expression::ArrayIndex(_) => 
                         todo!(),
 
@@ -380,7 +381,7 @@ impl GeneratorInstance {
                 Ok(a)
             }
 
-            // TODO
+            // TODO sizeof
             Expression::SizeOf(_) => todo!("Sizeof"),
 
             Expression::ArrayIndex(args) => {
@@ -496,7 +497,7 @@ impl GeneratorInstance {
                 Ok(scratch)
             }
 
-            // TODO
+            // TODO String literals
             Expression::StringLiteral(_) => todo!()
         }
     }
