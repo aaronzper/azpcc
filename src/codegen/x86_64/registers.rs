@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use crate::error::CompilerError;
 
 /// Represents an unsized, x86-64 general-purpose register
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]

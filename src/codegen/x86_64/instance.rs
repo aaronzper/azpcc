@@ -2,9 +2,9 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use log::trace;
 
-use crate::{ast::{types::FunctionType, Type}, codegen::{error::CodegenError, x86_64::helpers::get_asm}};
+use crate::{ast::Type, codegen::{error::CodegenError, x86_64::helpers::get_asm}};
 
-use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, helpers::{get_size, get_bytes}};
+use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, helpers::get_bytes};
 
 pub struct GeneratorInstance {
     /// Tracks which registers are in used as scratch
