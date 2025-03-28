@@ -2,6 +2,8 @@ use crate::{ast::{expressions::BinaryExpr, Expression, Type}, codegen::{error::C
 
 use super::{helpers::get_size, instance::{GeneratorInstance, Scratch}, instructions::Instr, registers::{RegisterSize, SizedRegister, ARG_REGS}};
 
+enum ComparisonType { Eq, Ne, Lt, Gt, Le, Ge }
+
 impl GeneratorInstance {
     fn get_binary_scratches(&mut self, args: &BinaryExpr) -> 
         Result<(Scratch, Scratch), CodegenError> {
@@ -10,6 +12,44 @@ impl GeneratorInstance {
 
         Ok((a,b))
     }
+
+    fn gen_comparison(&mut self, args: &BinaryExpr, cmp: ComparisonType) ->
+        Result<Scratch, CodegenError> {
+
+        let (a, b) = self.get_binary_scratches(args)?;
+        let result = self.alloc_scratch(RegisterSize::Byte)?;
+
+        let to_branch = self.new_label();
+        let to_end = self.new_label();
+
+        let j_to_branch = match cmp {
+            ComparisonType::Eq => Instr::Je(to_branch),
+            ComparisonType::Ne => Instr::Jne(to_branch),
+            ComparisonType::Lt => Instr::Jl(to_branch),
+            ComparisonType::Gt => Instr::Jg(to_branch),
+            ComparisonType::Le => Instr::Jle(to_branch),
+            ComparisonType::Ge => Instr::Jge(to_branch),
+        };
+
+        let cmp = Instr::Cmp(a.reg.to_string(), b.reg.to_string());
+        let mov_0 = Instr::Mov(result.reg.to_string(), "0".to_string());
+        let j_to_end = Instr::Jmp(to_end);
+        let mov_1 = Instr::Mov(result.reg.to_string(), "1".to_string());
+
+        self.add_instr(cmp);
+        self.add_instr(j_to_branch);
+
+        self.add_instr(mov_0);
+        self.add_instr(j_to_end);
+
+        self.add_label(to_branch);
+        self.add_instr(mov_1);
+
+        self.add_label(to_end);
+
+        Ok(result)
+    }
+
     pub fn gen_expr(&mut self, expr: &Expression) -> 
         Result<Scratch, CodegenError> {
         
@@ -151,59 +191,23 @@ impl GeneratorInstance {
                 Ok(a)
             },
 
-            Expression::Equality(expr) => {
-                let (a, b) = self.get_binary_scratches(expr)?;
-                let result = self.alloc_scratch(RegisterSize::Byte)?;
+            Expression::Equality(expr) =>
+                self.gen_comparison(expr, ComparisonType::Eq),
 
-                let to_branch = self.new_label();
-                let to_end = self.new_label();
+            Expression::Inequality(expr) => 
+                self.gen_comparison(expr, ComparisonType::Ne),
 
-                let cmp = Instr::Cmp(a.reg.to_string(), b.reg.to_string());
-                let je = Instr::Je(to_branch);
-                let mov_0 = Instr::Mov(result.reg.to_string(), "0".to_string());
-                let jmp = Instr::Jmp(to_end);
-                let mov_1 = Instr::Mov(result.reg.to_string(), "1".to_string());
+            Expression::LTCompare(expr) =>
+                self.gen_comparison(expr, ComparisonType::Lt),
 
-                self.add_instr(cmp);
-                self.add_instr(je);
+            Expression::GTCompare(expr) => 
+                self.gen_comparison(expr, ComparisonType::Gt),
 
-                self.add_instr(mov_0);
-                self.add_instr(jmp);
+            Expression::LECompare(expr) =>
+                self.gen_comparison(expr, ComparisonType::Le),
 
-                self.add_label(to_branch);
-                self.add_instr(mov_1);
-
-                self.add_label(to_end);
-
-                Ok(result)
-            },
-
-            Expression::Inequality(expr) => {
-                let (a, b) = self.get_binary_scratches(expr)?;
-                let result = self.alloc_scratch(RegisterSize::Byte)?;
-
-                let to_branch = self.new_label();
-                let to_end = self.new_label();
-
-                let cmp = Instr::Cmp(a.reg.to_string(), b.reg.to_string());
-                let jne = Instr::Jne(to_branch);
-                let mov_0 = Instr::Mov(result.reg.to_string(), "0".to_string());
-                let jmp = Instr::Jmp(to_end);
-                let mov_1 = Instr::Mov(result.reg.to_string(), "1".to_string());
-
-                self.add_instr(cmp);
-                self.add_instr(jne);
-
-                self.add_instr(mov_0);
-                self.add_instr(jmp);
-
-                self.add_label(to_branch);
-                self.add_instr(mov_1);
-
-                self.add_label(to_end);
-
-                Ok(result)
-            },
+            Expression::GECompare(expr) => 
+                self.gen_comparison(expr, ComparisonType::Ge),
 
             Expression::ShiftLeft(_) | Expression::ShiftRight(_) =>
                 todo!("Bitshifting"),

@@ -26,6 +26,10 @@ pub enum Instr {
     Cmp(String, String),
     Je(u64),
     Jne(u64),
+    Jl(u64),
+    Jg(u64),
+    Jle(u64),
+    Jge(u64),
 
     Cqo,
 
@@ -59,6 +63,10 @@ impl Display for Instr {
             Instr::Cmp(a, b) => write!(f, "cmp {}, {}", a, b),
             Instr::Je(a) => write!(f, "je .L{}", a),
             Instr::Jne(a) => write!(f, "jne .L{}", a),
+            Instr::Jl(a) => write!(f, "jl .L{}", a),
+            Instr::Jg(a) => write!(f, "jg .L{}", a),
+            Instr::Jle(a) => write!(f, "jle .L{}", a),
+            Instr::Jge(a) => write!(f, "jge .L{}", a),
 
             Instr::Cqo => write!(f, "cqo"),
 
