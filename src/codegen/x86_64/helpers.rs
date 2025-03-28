@@ -30,7 +30,7 @@ pub fn get_size(t: &Type) -> RegisterSize {
     }
 }
 
-pub fn get_asm(symbol: &str, type_of: &Type) -> String {
+pub fn get_global_asm(symbol: &str, type_of: &Type) -> String {
     let is_fn = match type_of {
         Type::Function(_) => true,
         _ => false,

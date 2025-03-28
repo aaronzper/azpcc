@@ -14,18 +14,22 @@ impl GeneratorInstance {
                 if decl.external {
                     self.add_extern(symbol.clone(), decl.type_of.clone());
                 } else {
-                    self.add_symbol(symbol.clone(), decl.type_of.clone());
+                    if self.global_scope() {
+                        self.add_global(symbol.clone(), decl.type_of.clone());
 
-                    match decl.type_of {
-                        Type::Function(_) => (),
-                        _ => self.add_bss(symbol, &decl.type_of),
-                    };
+                        match decl.type_of {
+                            Type::Function(_) => (),
+                            _ => self.add_bss(symbol, &decl.type_of),
+                        };
+                    } else {
+                        self.add_local(symbol, decl.type_of.clone());
+                    }
                 }
             },
 
             Some(val) => match (self.global_scope(), val)  {
                 (true, DeclarationValue::Function(stmts)) => {
-                    self.add_symbol(symbol.clone(), decl.type_of.clone());
+                    self.add_global(symbol.clone(), decl.type_of.clone());
                     self.add_fn_label(symbol);
 
                     let ret_label = self.new_label();
@@ -84,7 +88,7 @@ impl GeneratorInstance {
                 },
 
                 (true, DeclarationValue::Variable(e)) => {
-                    self.add_symbol(symbol.clone(), decl.type_of.clone());
+                    self.add_global(symbol.clone(), decl.type_of.clone());
                     
                     let asm = match e {
                         // TODO: Handle sizes
@@ -103,7 +107,12 @@ impl GeneratorInstance {
                 (false, DeclarationValue::Function(_)) => 
                     panic!("Can't define local function!"),
 
-                (false, DeclarationValue::Variable(e)) => todo!()
+                (false, DeclarationValue::Variable(e)) => {
+                    let asm_var = self.add_local(symbol, decl.type_of.clone());
+                    let asm_val = self.gen_expr(e)?;
+
+                    self.add_instr(Instr::Mov(asm_var, asm_val.reg.to_string()));
+                }
             }
         }
 

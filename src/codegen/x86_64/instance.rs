@@ -2,9 +2,9 @@ use std::{cell::{Cell, RefCell}, collections::{HashMap, HashSet}, rc::Rc};
 
 use log::trace;
 
-use crate::{ast::Type, codegen::{error::CodegenError, x86_64::helpers::get_asm}};
+use crate::{ast::Type, codegen::{error::CodegenError, x86_64::helpers::get_global_asm}};
 
-use super::{instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}, helpers::get_bytes};
+use super::{helpers::{get_bytes, get_size}, instructions::Instr, registers::{Register, RegisterSize, SizedRegister, ARG_REGS, NUM_REGS}};
 
 #[derive(Debug, Clone)]
 pub struct ScopeVariable {
@@ -130,8 +130,27 @@ impl GeneratorInstance {
         ScopeOwner::new(self)
     }
 
-    pub fn add_symbol(&mut self, symbol: String, type_of: Type) {
-        let asm_rep = get_asm(&symbol, &type_of);
+    pub fn add_local(&mut self, symbol: String, type_of: Type) -> String {
+        if self.global_scope() {
+            panic!("Can't add local if you're global!!");
+        }
+
+        let size = get_bytes(&type_of);
+        let new_offset = self.rdp_offset.get() + size;
+
+        self.rdp_offset.set(new_offset);
+        self.add_instr(Instr::Sub("RSP".to_string(), size.to_string()));
+
+        let asm_rep = format!("{} [RBP - {}]", get_size(&type_of), new_offset);
+
+        self.add_symbol_with_asm(symbol, ScopeVariable { 
+            asm_rep: asm_rep.clone(), type_of, });
+
+        asm_rep
+    }
+
+    pub fn add_global(&mut self, symbol: String, type_of: Type) {
+        let asm_rep = get_global_asm(&symbol, &type_of);
         self.add_symbol_with_asm(symbol, ScopeVariable { asm_rep, type_of });
     }
 
@@ -151,7 +170,7 @@ impl GeneratorInstance {
 
         self.externs.push(symbol.clone());
 
-        let asm_rep = get_asm(&symbol, &type_of);
+        let asm_rep = get_global_asm(&symbol, &type_of);
         self.scopes.borrow_mut().last_mut().unwrap().insert(symbol, 
             ScopeVariable { asm_rep, type_of, });
     }
