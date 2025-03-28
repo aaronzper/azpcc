@@ -30,7 +30,7 @@ impl GeneratorInstance {
 
                     let ret_label = self.new_label();
                     self.return_label = Some(ret_label);
-                    self.enter_scope();
+                    let _s = self.enter_scope();
 
                     self.add_instr(Instr::Push("RBP".to_string()));
                     self.add_instr(
@@ -81,7 +81,6 @@ impl GeneratorInstance {
 
                     self.return_label = None;
                     self.arg_regs.clear();
-                    self.exit_scope();
                 },
 
                 (true, DeclarationValue::Variable(e)) => {

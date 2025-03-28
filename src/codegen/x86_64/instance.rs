@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
+use std::{cell::{Cell, RefCell}, collections::{HashMap, HashSet}, rc::Rc};
 
 use log::trace;
 
@@ -21,13 +21,16 @@ pub struct GeneratorInstance {
 
     /// Stack of scopes, maps symbol name to asm code for it. 0 is global, 1 is
     /// function scope, 2 is some scope inside that, etc
-    scopes: Vec<HashMap<String, ScopeVariable>>,
+    scopes: Rc<RefCell<Vec<HashMap<String, ScopeVariable>>>>,
 
     /// Tracks which argument registers are in use by the current fn
     pub arg_regs: HashSet<Register>,
 
     /// The label to jump to to return, if we're in a fn
     pub return_label: Option<u64>,
+
+    /// How many bytes below RDP we've allocated to local variables
+    rdp_offset: Rc<Cell<usize>>,
 
     /// External symbols we'll link to later
     externs: Vec<String>,
@@ -66,9 +69,10 @@ impl GeneratorInstance {
         GeneratorInstance {
             scratches: Rc::new(RefCell::new(scratches)),
             label_counter: 0,
-            scopes: vec![HashMap::new()],
+            scopes: Rc::new(RefCell::new(vec![HashMap::new()])),
             arg_regs: HashSet::new(),
             return_label: None,
+            rdp_offset: Rc::new(Cell::new(0)),
             externs: vec![],
             globals: vec![],
             data: String::new(),
@@ -109,10 +113,10 @@ impl GeneratorInstance {
         self.instructions.push_str(&format!("{}:\n", label));
     }
 
-    pub fn get_symbol(&self, symbol: &str) -> Option<&ScopeVariable> {
-        for scope in self.scopes.iter().rev() {
+    pub fn get_symbol(&self, symbol: &str) -> Option<ScopeVariable> {
+        for scope in self.scopes.borrow().iter().rev() {
             match scope.get(symbol) {
-                Some(s) => return Some(s),
+                Some(s) => return Some(s.clone()),
                 None => continue,
             }
         }
@@ -120,13 +124,10 @@ impl GeneratorInstance {
         None
     }
 
-    pub fn global_scope(&self) -> bool { self.scopes.len() == 1 }
+    pub fn global_scope(&self) -> bool { self.scopes.borrow().len() == 1 }
 
-    pub fn enter_scope(&mut self) { self.scopes.push(HashMap::new()); }
-
-    pub fn exit_scope(&mut self) { 
-        let dropped = self.scopes.pop(); 
-        trace!("Dropping scope {:#?}", dropped);
+    pub fn enter_scope(&mut self) -> ScopeOwner { 
+        ScopeOwner::new(self)
     }
 
     pub fn add_symbol(&mut self, symbol: String, type_of: Type) {
@@ -142,7 +143,7 @@ impl GeneratorInstance {
         trace!("Adding symbol {} as {:?}", symbol, var);
 
         // unwrap is allowed cause we should always have at least 1
-        self.scopes.last_mut().unwrap().insert(symbol, var);
+        self.scopes.borrow_mut().last_mut().unwrap().insert(symbol, var);
     }
 
     pub fn add_extern(&mut self, symbol: String, type_of: Type) {
@@ -151,9 +152,8 @@ impl GeneratorInstance {
         self.externs.push(symbol.clone());
 
         let asm_rep = get_asm(&symbol, &type_of);
-        self.scopes.last_mut().unwrap().insert(symbol, ScopeVariable {
-            asm_rep, type_of,
-        });
+        self.scopes.borrow_mut().last_mut().unwrap().insert(symbol, 
+            ScopeVariable { asm_rep, type_of, });
     }
     
     pub fn add_instr(&mut self, instr: Instr) {
@@ -203,5 +203,32 @@ impl Drop for Scratch {
     fn drop(&mut self) {
         let mut scratches = self.scratches.borrow_mut();
         scratches.insert(self.reg.reg, false);
+    }
+}
+
+/// "Owns" a scope that get cleaned up after
+pub struct ScopeOwner {
+    scopes: Rc<RefCell<Vec<HashMap<String, ScopeVariable>>>>,
+    rdp_offset: Rc<Cell<usize>>,
+    old_offset: usize,
+}
+
+impl ScopeOwner {
+    fn new(instance: &mut GeneratorInstance) -> ScopeOwner {
+        let so = ScopeOwner {
+            scopes: instance.scopes.clone(),
+            rdp_offset: instance.rdp_offset.clone(),
+            old_offset: instance.rdp_offset.get(),
+        };
+        so.scopes.borrow_mut().push(HashMap::new());
+        so
+    }
+}
+
+impl Drop for ScopeOwner {
+    fn drop(&mut self) {
+        self.rdp_offset.set(self.old_offset);
+        let dropped = self.scopes.borrow_mut().pop();
+        trace!("Dropping scope {:#?}", dropped);
     }
 }

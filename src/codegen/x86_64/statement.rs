@@ -13,8 +13,6 @@ impl GeneratorInstance {
                 for s in stmts {
                     self.gen_statement(s)?;
                 }
-
-                self.exit_scope();
             },
 
             Statement::Declaration(decl) => self.gen_declaration(decl)?,
