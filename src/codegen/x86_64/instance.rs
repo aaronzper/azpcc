@@ -26,6 +26,9 @@ pub struct GeneratorInstance {
     /// The label to jump to to return, if we're in a fn
     pub return_label: Option<u64>,
 
+    /// Contents of the data section
+    data: String,
+
     /// Contents of the BSS section
     bss: String,
 
@@ -59,6 +62,7 @@ impl GeneratorInstance {
             externs: vec![],
             globals: vec![],
             return_label: None,
+            data: String::new(),
             bss: String::new(),
             instructions: String::new(),
         }
@@ -150,6 +154,10 @@ impl GeneratorInstance {
         self.bss.push_str(&format!("{}: resb {}\n", symbol, size));
     }
 
+    pub fn add_data(&mut self, symbol: String, asm: String) {
+        self.data.push_str(&format!("{}: {}\n", symbol, asm));
+    }
+
     pub fn get_instructions(&self) -> String {
         let mut asm = String::from("BITS 64\nDEFAULT REL\n\n");
 
@@ -160,6 +168,9 @@ impl GeneratorInstance {
         for g in &self.globals {
             asm.push_str(&format!("GLOBAL {}\n", g));
         }
+
+        asm.push_str("\nSECTION .data\n");
+        asm.push_str(&self.data);
 
         asm.push_str("\nSECTION .bss\n");
         asm.push_str(&self.bss);

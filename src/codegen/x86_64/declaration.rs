@@ -1,5 +1,5 @@
 
-use crate::{ast::{declaration::DeclarationValue, Declaration, Type}, codegen::error::CodegenError};
+use crate::{ast::{declaration::DeclarationValue, Declaration, Expression, Type}, codegen::error::CodegenError};
 
 use super::{helpers::get_size, instance::GeneratorInstance, instructions::Instr, registers::{SizedRegister, ARG_REGS}};
 
@@ -78,7 +78,19 @@ impl GeneratorInstance {
 
                 (true, DeclarationValue::Variable(e)) => {
                     self.add_symbol(symbol.clone(), decl.type_of.clone());
-                    // TODO: Finish
+                    
+                    let asm = match e {
+                        // TODO: Handle sizes
+                        Expression::IntLiteral(i) => format!("dd {}", i),
+
+                        Expression::CharLiteral(c) => format!("db {}", c),
+
+                        Expression::StringLiteral(s) => format!("db {}, 0", s),
+
+                        _ => panic!("Must init global w/ a literal"),
+                    };
+
+                    self.add_data(symbol, asm);
                 }
 
                 (false, DeclarationValue::Function(_)) => 
