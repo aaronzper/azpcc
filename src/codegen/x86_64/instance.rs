@@ -111,7 +111,10 @@ impl GeneratorInstance {
 
     pub fn enter_scope(&mut self) { self.scopes.push(HashMap::new()); }
 
-    pub fn exit_scope(&mut self) { self.scopes.pop(); }
+    pub fn exit_scope(&mut self) { 
+        let dropped = self.scopes.pop(); 
+        trace!("Dropping scope {:#?}", dropped);
+    }
 
     pub fn add_symbol(&mut self, symbol: String, type_of: Type) {
         let asm = get_asm(&symbol, &type_of);

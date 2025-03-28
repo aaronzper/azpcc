@@ -44,17 +44,21 @@ impl GeneratorInstance {
                     };
 
                     for (i, (arg_n, arg_t)) in args.iter().enumerate() {
-                        if i >= 6 {
-                            todo!("Functions defs with more that 6 args");
-                        }
-
                         let symbol = arg_n.clone();
-                        let reg = SizedRegister {
-                            reg: ARG_REGS[i],
-                            size: get_size(arg_t),
-                        }.to_string();
+                        let size = get_size(arg_t);
 
-                        self.add_symbol_with_asm(symbol, arg_t.clone(), reg);
+                        let asm = if i < 6 {
+                            SizedRegister {
+                                reg: ARG_REGS[i],
+                                size,
+                            }.to_string()
+                        } else {
+                            // Arg 7+ starts at RBP+16
+                            let rbp_offset = 16 + ((i-6) * 8);
+                            format!("{} [RBP + {}]", size, rbp_offset)
+                        };
+
+                        self.add_symbol_with_asm(symbol, arg_t.clone(), asm);
                     }
 
                     for stmt in stmts {
